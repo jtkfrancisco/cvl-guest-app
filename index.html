@@ -1,0 +1,790 @@
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cedar Valley Lodge App</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: a demo stage (moment rail + device) on desktop; the bare app, full-bleed, on a phone.
+   --brand and --accent swap for white-label; everything else is neutral iOS-style. */
+:root{
+  --stage:#eceff1; --bg:#f2f3f5; --surface:#ffffff; --fill:#eceef1; --fg:#111518; --fg2:#5f676e; --fg3:#9aa1a7; --line:rgba(17,21,24,.09);
+  --brand:#0b5368; --brand-2:#b5121b; --accent:#0b5368; --on-brand:#ffffff; --brand-tint:#e3eff2;
+  --ok:#1f8a55; --ok-tint:#e4f4eb; --red:#d6333b; --star:#f2a20c; --device:#101214;
+  --f:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif; --sb:54px;
+  color-scheme:light;
+}
+:root[data-brand="client"]{ --brand:#16191d; --brand-2:#0a72c4; --accent:#0a72c4; --brand-tint:#e6eef6 }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --stage:#0a0c0d; --bg:#000000; --surface:#151719; --fill:#1f2225; --fg:#f2f4f5; --fg2:#a3abb1; --fg3:#6c757c; --line:rgba(255,255,255,.08);
+  --brand:#2c8aa5; --brand-2:#e2484f; --accent:#4fb3d0; --brand-tint:#11292f; --ok:#45c482; --ok-tint:#10291c; --red:#ff5a5f; --device:#2a2d30; color-scheme:dark }
+  :root:not([data-theme="light"])[data-brand="client"]{ --brand:#3a4048; --brand-2:#3d9be3; --accent:#3d9be3; --brand-tint:#16212b } }
+:root[data-theme="dark"]{ --stage:#0a0c0d; --bg:#000000; --surface:#151719; --fill:#1f2225; --fg:#f2f4f5; --fg2:#a3abb1; --fg3:#6c757c; --line:rgba(255,255,255,.08);
+  --brand:#2c8aa5; --brand-2:#e2484f; --accent:#4fb3d0; --brand-tint:#11292f; --ok:#45c482; --ok-tint:#10291c; --red:#ff5a5f; --device:#2a2d30; color-scheme:dark }
+:root[data-theme="dark"][data-brand="client"]{ --brand:#3a4048; --brand-2:#3d9be3; --accent:#3d9be3; --brand-tint:#16212b }
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--fg);font-family:var(--f);font-size:15px;line-height:1.35;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px;
+  display:flex;justify-content:center;align-items:center;gap:56px}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+img{display:block;max-width:100%}
+p,.cell .t span,.note{text-wrap:pretty}
+
+/* stage rail */
+.rail{width:220px;display:flex;flex-direction:column;gap:28px}
+.rail h1{font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.rail .sub{color:var(--fg2);font-size:13px;margin-top:4px}
+.seg2{display:flex;background:var(--fill);border-radius:10px;padding:2px}
+.seg2 button{flex:1;text-align:center;font-size:13px;font-weight:600;padding:7px 0;border-radius:8px;color:var(--fg2)}
+.seg2 button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.moments{display:flex;flex-direction:column;gap:2px}
+.moments button{display:flex;gap:12px;align-items:baseline;padding:9px 10px;border-radius:9px;font-size:14px;font-weight:500}
+.moments button:hover{background:var(--fill)}
+.moments button span{color:var(--fg3);font-variant-numeric:tabular-nums;font-size:12px;width:14px}
+
+/* device */
+.device{width:393px;height:852px;flex:none;border-radius:62px;padding:11px;background:var(--device);box-shadow:0 0 0 1.5px #3a3e42,0 40px 80px -30px rgba(0,0,0,.45);position:relative}
+.screen{position:relative;width:100%;height:100%;border-radius:52px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;isolation:isolate}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:122px;height:35px;border-radius:20px;background:#000;z-index:30}
+.status{height:54px;display:flex;align-items:center;justify-content:space-between;padding:6px 30px 0 40px;font-weight:600;font-size:16px;z-index:20;position:absolute;inset:0 0 auto;pointer-events:none}
+.status:not(.light){background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.status.light{color:#fff}
+.status svg{height:12px}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--fg);opacity:.85;z-index:40;pointer-events:none}
+@media (max-width:860px){ .rail{display:none} }
+@media (max-width:500px){
+  :root{--sb:0px}
+  body{padding:0;display:block}
+  .device{width:100%;height:100%;border-radius:0;padding:0;box-shadow:none;background:none}
+  .screen{border-radius:0}
+  .island,.status,.homebar{display:none}
+}
+
+/* app chrome */
+.views{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:var(--sb) 0 28px;background:var(--bg);scrollbar-width:none}
+.view::-webkit-scrollbar{display:none}
+.view.in{animation:pushIn .32s cubic-bezier(.2,.8,.2,1)}
+.view.back{animation:popIn .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes pushIn{from{transform:translateX(36%);opacity:.4}to{transform:none;opacity:1}}
+@keyframes popIn{from{transform:translateX(-18%);opacity:.6}to{transform:none;opacity:1}}
+.pad{padding:0 18px}
+.stack{display:flex;flex-direction:column;gap:22px}
+.navbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;height:44px;padding:0 10px;margin-bottom:8px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.navbar .backbtn{display:flex;align-items:center;gap:4px;color:var(--accent);font-size:17px;padding:6px;white-space:nowrap}
+.navbar .backbtn svg{width:13px;height:22px;flex:none}
+.navbar .ttl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:600;font-size:17px;white-space:nowrap}
+.iconbtn{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--fg);position:relative}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn .dot{position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--bg)}
+.large{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:6px 18px 2px}
+.large h1{font-size:34px;font-weight:700;letter-spacing:-.025em;margin:0;line-height:1.1}
+.large small{display:block;color:var(--fg2);font-size:13px;font-weight:500;margin-bottom:4px}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(4,1fr);padding:7px 8px 28px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:.5px solid var(--line);z-index:6}
+@media (max-width:500px){ .tabbar{padding-bottom:max(10px,env(safe-area-inset-bottom,0px))} .view{padding-top:env(safe-area-inset-top,0px)} .navbar{top:0} }
+.tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--fg3)}
+.tabbar button[aria-current="page"]{color:var(--accent)}
+.tabbar svg{width:26px;height:26px}
+
+/* content */
+.h2{display:flex;justify-content:space-between;align-items:baseline;padding:0 18px;margin-bottom:-10px}
+.h2 h2{font-size:22px;font-weight:700;letter-spacing:-.015em;margin:0}
+.h2 button{color:var(--accent);font-size:15px;font-weight:500}
+.group{background:var(--surface);border-radius:14px;margin:0 18px;overflow:hidden}
+.cell{display:flex;align-items:center;gap:12px;padding:11px 14px;width:100%;min-height:52px;position:relative}
+.cell+.cell::before{content:"";position:absolute;top:0;right:0;left:var(--inset,14px);border-top:.5px solid var(--line)}
+.cell .t{flex:1;min-width:0}
+.cell .t b{display:block;font-weight:600;font-size:16px}
+.cell .t span{display:block;color:var(--fg2);font-size:13px;margin-top:1px}
+.cell .chev{color:var(--fg3);width:8px;flex:none}
+.thumb{width:52px;height:52px;border-radius:10px;flex:none;overflow:hidden;background:var(--fill);position:relative}
+.thumb>.ph,.shero>.ph{width:100%;height:100%}
+.thumb img,.ph img{width:100%;height:100%;object-fit:cover}
+.ph{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 55%,var(--brand-2)))}
+.ph .fb{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.75)}
+.ph .fb svg{width:34%;height:34%;max-width:44px;max-height:44px}
+.ph img{position:relative;z-index:1}
+.glyph{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--brand);color:var(--on-brand)}
+.glyph svg{width:18px;height:18px}
+.vstat{font-size:13px;color:var(--fg2);font-weight:500;white-space:nowrap}
+.vstat.closed{color:var(--fg3)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--ok-tint);color:var(--ok)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 6px;border-radius:5px;background:var(--fill);color:var(--fg2);margin:4px 4px 0 0}
+.tag.me{background:var(--ok-tint);color:var(--ok)}
+.tag.no{background:none;color:var(--red);padding-left:0}
+.price{font-variant-numeric:tabular-nums;font-weight:600}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:14px;background:var(--accent);color:#fff;font-weight:600;font-size:17px}
+.btn.alt{background:var(--fill);color:var(--fg)}
+.btn:disabled{opacity:.35}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 18px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:34px;padding:0 14px;border-radius:17px;background:var(--surface);font-size:15px;font-weight:500;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--accent);color:#fff}
+.chipsep{flex:none;width:1px;margin:7px 2px;background:var(--line)}
+.chip.filter{display:flex;align-items:center;gap:6px;background:none;box-shadow:inset 0 0 0 1px var(--line)}
+.chip.filter svg{width:0;height:16px;transition:width .2s}
+.chip.filter[aria-pressed="true"]{background:var(--accent);box-shadow:none}
+.chip.filter[aria-pressed="true"] svg{width:16px}
+.wrapchips{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:13px;color:var(--fg2);padding:0 32px;margin-top:-14px}
+
+/* home */
+.hero{margin:0 18px;border-radius:20px;overflow:hidden;position:relative;height:236px;color:#fff;background:#24343a}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 25%,rgba(0,0,0,.72))}
+.hero .in{position:absolute;inset:auto 0 0;padding:16px;z-index:1;display:flex;flex-direction:column;gap:8px}
+.hero small{opacity:.85;font-size:13px;font-weight:500}
+.hero .room{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+.hero .pill{background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);width:max-content}
+.hero .pill.ok{background:#1f8a55}
+.rail-x{display:flex;gap:12px;overflow-x:auto;padding:0 18px;scroll-snap-type:x mandatory;scroll-padding-inline:18px;scrollbar-width:none}
+.rail-x::-webkit-scrollbar{display:none}
+.vcard{flex:none;width:156px;scroll-snap-align:start;display:flex;flex-direction:column;gap:8px}
+.vcard .ph{height:116px;border-radius:14px}
+.vcard b{font-size:15px;font-weight:600;display:block}
+.live{margin:0 18px;background:var(--surface);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.live .top{display:flex;gap:12px;align-items:center}
+.live .top .t{flex:1;min-width:0}
+.live .top b{font-weight:700;display:block}
+.live .top span{color:var(--fg2);font-size:13px}
+.eta{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.bar i{height:5px;border-radius:3px;background:var(--fill)}
+.bar i.on{background:var(--ok)}
+.time{width:62px;flex:none;font-variant-numeric:tabular-nums;font-weight:600;font-size:15px}
+.time small{display:block;font-size:10px;letter-spacing:.02em;color:var(--fg3);font-weight:600;text-transform:uppercase}
+
+/* venue / item */
+.cover{height:220px;margin-top:calc(var(--sb) * -1);position:relative}
+.cover .ph{position:absolute;inset:0}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35),transparent 45%);pointer-events:none}
+.floatnav{position:absolute;top:calc(var(--sb) + 4px);left:12px;right:12px;display:flex;justify-content:space-between;z-index:3}
+.round{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);color:#111;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.round svg{width:18px;height:18px}
+.vhead{padding:16px 18px 0;display:flex;flex-direction:column;gap:6px}
+.vhead h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:0}
+.vhead .meta{display:flex;gap:8px;align-items:center;color:var(--fg2);font-size:13px;flex-wrap:wrap}
+.vhead p{margin:4px 0 0;color:var(--fg2)}
+.banner2{margin:0 18px;display:flex;align-items:center;gap:10px;background:var(--brand-tint);border-radius:12px;padding:10px 12px;font-size:15px;font-weight:500}
+.banner2 svg{width:20px;height:20px;flex:none}
+.item{display:flex;gap:12px;padding:14px;width:100%;position:relative;align-items:flex-start}
+.item+.item::before{content:"";position:absolute;top:0;left:14px;right:0;border-top:.5px solid var(--line)}
+.item .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.item .t b{font-weight:600;font-size:16px}
+.item .t p{margin:0;color:var(--fg2);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .plus{position:absolute;right:8px;bottom:8px;width:30px;height:30px;border-radius:50%;background:var(--surface);color:var(--fg);display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18);z-index:2;font-size:20px;line-height:1}
+.item.nofit .t,.item.nofit .thumb{opacity:.45}
+.station{color:var(--fg3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.cartpill{position:sticky;bottom:10px;margin:0 18px;z-index:4}
+.cartpill .btn{justify-content:space-between;padding:0 18px;box-shadow:0 10px 24px -10px rgba(0,0,0,.4)}
+.cartpill .n{background:rgba(255,255,255,.22);border-radius:8px;padding:2px 8px;font-size:15px}
+
+/* sheet */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.38);z-index:50;opacity:0;transition:opacity .25s;pointer-events:none}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:22px 22px 0 0;z-index:51;transform:translateY(105%);transition:transform .34s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.sheet.on{transform:none}
+.sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--fg3);opacity:.5;margin:7px auto 0;position:absolute;left:0;right:0;z-index:3}
+.sheet .body{overflow-y:auto;padding-bottom:20px;scrollbar-width:none}
+.sheet .foot{padding:12px 18px 30px;background:var(--bg);border-top:.5px solid var(--line);display:flex;gap:10px;align-items:center}
+.sheet .shero{height:210px}
+.sheet h3{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0}
+.opt{display:flex;align-items:center;gap:12px;padding:12px 14px;position:relative;width:100%}
+.opt+.opt::before{content:"";position:absolute;top:0;left:14px;right:0;border-top:.5px solid var(--line)}
+.opt .t{flex:1}
+.opt .t small{display:block;color:var(--fg2);font-size:13px}
+.opt .mark{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--fg3);display:grid;place-items:center;flex:none}
+.opt .mark.sq{border-radius:6px}
+.opt[aria-checked="true"] .mark{background:var(--accent);border-color:var(--accent);color:#fff}
+.opt .mark svg{width:13px;height:13px;opacity:0}
+.opt[aria-checked="true"] .mark svg{opacity:1}
+.opt:disabled{opacity:.35}
+.glabel{display:flex;justify-content:space-between;padding:0 32px 6px;font-size:13px;color:var(--fg2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.stepper{display:flex;align-items:center;gap:4px;background:var(--fill);border-radius:12px;height:50px;padding:0 6px;flex:none}
+.stepper button{width:34px;height:34px;display:grid;place-items:center;font-size:20px;border-radius:8px}
+.stepper span{min-width:18px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* booking */
+.days{display:flex;gap:8px;overflow-x:auto;padding:0 18px;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day{flex:none;width:52px;height:66px;border-radius:14px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.day small{font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase}
+.day b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.day[aria-pressed="true"]{background:var(--accent);color:#fff}
+.day[aria-pressed="true"] small{color:inherit;opacity:.8}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 18px}
+.slot{height:42px;border-radius:10px;background:var(--surface);font-weight:600;font-size:15px;text-align:center;font-variant-numeric:tabular-nums}
+.slot[aria-pressed="true"]{background:var(--accent);color:#fff}
+.slot:disabled{opacity:.3;text-decoration:line-through;cursor:default}
+.who{display:flex;align-items:center;gap:12px}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--brand-tint);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:15px;flex:none}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);margin:0 18px;background:var(--surface);border-radius:14px}
+.facts div{padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.facts div+div{border-left:.5px solid var(--line)}
+.facts small{font-size:11px;color:var(--fg2);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.facts b{font-weight:600;font-size:15px}
+.done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:30px 24px 10px}
+.done .ok{width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center}
+.done .ok svg{width:30px;height:30px}
+.done h3{margin:6px 0 0}
+.done p{margin:0;color:var(--fg2)}
+
+/* foodback */
+.stars{display:flex;justify-content:center;gap:10px}
+.stars button svg{width:40px;height:40px;color:var(--fill)}
+.stars button.on svg{color:var(--star)}
+textarea{width:100%;min-height:84px;border:0;border-radius:12px;background:var(--surface);padding:12px 14px;resize:none;font-size:15px}
+
+/* pass */
+.pass{margin:0 18px;border-radius:20px;padding:18px;color:#fff;background:linear-gradient(150deg,var(--brand),color-mix(in srgb,var(--brand) 70%,#000));display:flex;flex-direction:column;gap:16px;box-shadow:0 18px 30px -18px rgba(0,0,0,.5)}
+.pass .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pass small{opacity:.75;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block}
+.pass b{font-size:16px;font-weight:600}
+.pass .cap{text-wrap:balance;text-align:center;font-size:13px;opacity:.85;margin-top:-6px}
+.qrbox{background:#fff;border-radius:12px;padding:10px;width:150px;height:150px;align-self:center}
+.qrbox img,.qrbox canvas{width:100%!important;height:100%!important}
+.switch{width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;flex:none;transition:background .2s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--ok)}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+
+/* banner */
+.banner{position:absolute;top:10px;left:8px;right:8px;z-index:60;border-radius:22px;padding:12px 14px;display:flex;gap:11px;align-items:center;
+  background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);
+  box-shadow:0 10px 30px -8px rgba(0,0,0,.35);transform:translateY(-140%);visibility:hidden;transition:transform .45s cubic-bezier(.2,.9,.25,1.1),visibility .45s}
+.banner.on{transform:none;visibility:visible}
+.banner .appi{width:38px;height:38px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700;letter-spacing:.06em;flex:none}
+.banner .t{flex:1;min-width:0}
+.banner .t b{font-weight:600;font-size:15px;display:block}
+.banner .t span{font-size:13px;color:var(--fg2)}
+.banner .when{font-size:12px;color:var(--fg2);align-self:flex-start}
+@media (max-width:500px){ .banner{top:max(10px,env(safe-area-inset-top,0px))} }
+@media (prefers-reduced-motion:reduce){ .view.in,.view.back{animation:none} .sheet,.banner,.scrim{transition:none} }
+</style>
+
+<aside class="rail" aria-label="Demo controls">
+  <div><h1 id="r-title">Cedar Valley Lodge</h1><div class="sub">Guest app concept · ESS</div></div>
+  <div class="seg2" role="group" aria-label="Brand">
+    <button id="b-ess" aria-pressed="true" onclick="setBrand('ess')">ESS</button>
+    <button id="b-client" aria-pressed="false" onclick="setBrand('client')">Client</button>
+  </div>
+  <nav class="moments" aria-label="Moments">
+    <button onclick="moment('arrive')"><span>1</span>Arrival, room ready</button>
+    <button onclick="moment('table')"><span>2</span>Order from the table</button>
+    <button onclick="moment('later')"><span>3</span>Order ahead for dinner</button>
+    <button onclick="moment('eatclub')"><span>4</span>Tomorrow's lunch</button>
+    <button onclick="moment('massage')"><span>5</span>Book a massage</button>
+    <button onclick="moment('foodback')"><span>6</span>Foodback</button>
+    <button onclick="moment('prefs')"><span>7</span>Halal profile</button>
+  </nav>
+</aside>
+
+<div class="device">
+  <div class="screen" id="screen">
+    <div class="island"></div>
+    <div class="status" id="status"><span>12:10</span><span style="display:flex;gap:6px;align-items:center">
+      <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+      <svg viewBox="0 0 16 12"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .7 10.4 10.4 0 0 0 .8 3.6L2 4.9a8.6 8.6 0 0 1 6-2.4zm0 3.6c1.3 0 2.5.5 3.4 1.3L12.6 6A6.6 6.6 0 0 0 8 4.3 6.6 6.6 0 0 0 3.4 6l1.2 1.4c.9-.8 2.1-1.3 3.4-1.3zM8 9.6l2-2.1a3 3 0 0 0-4 0z" fill="currentColor"/></svg>
+      <svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2" fill="currentColor"/><rect x="24" y="4" width="2" height="4" rx="1" fill="currentColor" opacity=".4"/></svg></span></div>
+    <div class="banner" id="banner" role="status" aria-live="polite"></div>
+    <div class="views" id="views"></div>
+    <nav class="tabbar" id="tabbar"></nav>
+    <div class="scrim" id="scrim" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+    <div class="homebar"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- icons ---------- */
+const sv = (p, w=1.8) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const I = {
+  home: sv('<path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z"/>'),
+  eat: sv('<path d="M7 3v7M4.5 3v4.5a2.5 2.5 0 0 0 5 0V3M7 10v11M17 21V3c-2 1-3.5 4-3.5 8.5H17"/>'),
+  book: sv('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  me: sv('<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c1.4-3.6 4.2-5.5 7.5-5.5s6.1 1.9 7.5 5.5"/>'),
+  bell: sv('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5h4"/>'),
+  qr: sv('<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/>'),
+  back: '<svg viewBox="0 0 12 21"><path d="M10.5 1.5 2 10.5l8.5 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  chev: '<svg class="chev" viewBox="0 0 8 13"><path d="M1.5 1.5 6.5 6.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  check: sv('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.6),
+  plate: sv('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/>'),
+  bag: sv('<path d="M5 8h14l-1 13H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>'),
+  beer: sv('<path d="M5 7h10v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M15 10h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M5 7a3 3 0 0 1 5-2 3 3 0 0 1 5 2"/>'),
+  spark: sv('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
+  door: sv('<path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M3 21h18"/><circle cx="14.5" cy="12" r=".8" fill="currentColor"/>'),
+  shop: sv('<path d="M4 9l1-5h14l1 5M4 9h16v11H4zM9 20v-6h6v6"/>'),
+  hand: sv('<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7 6 6 0 0 1-5-3l-2-4a1.5 1.5 0 0 1 2.5-1.5L8 15"/>'),
+  scissors: sv('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 7.5 20 18M8.5 16.5 20 6"/>'),
+  golf: sv('<path d="M8 21V3l9 4-9 4"/><path d="M4 21h12"/>'),
+  dumbbell: sv('<path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/>'),
+  apple: sv('<path d="M12 7c-2-2-7-1.5-7 4 0 4 3 9 5 9 1 0 1.5-.5 2-.5s1 .5 2 .5c2 0 5-5 5-9 0-5.5-5-6-7-4zM12 7c0-2 1-4 3-4"/>'),
+  game: sv('<path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.5 1.6L15 14H9l-1.5 1.6A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"/><path d="M7 12v2M6 13h2M16 12h.01M18 14h.01"/>'),
+  wash: sv('<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M8 6h.01M11 6h.01"/>'),
+  shirt: sv('<path d="M8 3 3 6l2 4 2-1v12h10V9l2 1 2-4-5-3a4 4 0 0 1-8 0z"/>'),
+  ball: sv('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l4 3-1.5 4.5h-5L8 10.5z"/>'),
+  star: '<svg viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="currentColor"/></svg>',
+  calendar: sv('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  clock: sv('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+  apay: '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M16.4 12.6c0-2 1.6-2.9 1.7-3a3.7 3.7 0 0 0-2.9-1.6c-1.2-.1-2.4.7-3 .7s-1.6-.7-2.6-.7a3.9 3.9 0 0 0-3.3 2c-1.4 2.4-.4 6 1 8 .7 1 1.5 2 2.5 2s1.4-.7 2.6-.7 1.5.7 2.6.6 1.7-1 2.4-2a8 8 0 0 0 1-2.2 3.4 3.4 0 0 1-2-3.1zM14.4 6.7a3.4 3.4 0 0 0 .8-2.5 3.5 3.5 0 0 0-2.3 1.2 3.3 3.3 0 0 0-.8 2.4 2.9 2.9 0 0 0 2.3-1.1z"/></svg>'
+};
+
+/* ---------- language ---------- */
+const FR = {
+  'Home':'Accueil','Eat':'Repas','Book':'Réserver','Me':'Moi','Back':'Retour','Eat & drink':'Manger et boire','Good afternoon':'Bon après-midi','See all':'Tout voir','Today':"Aujourd'hui",'Tomorrow':'Demain',
+  'Your room is ready':'Votre chambre est prête','Being prepared · about 40 min':'En préparation · environ 40 min','Rotation 14 · Nov 16 – 30':'Rotation 14 · 16 – 30 nov.','Room':'Chambre',
+  'Your schedule':'Votre horaire','Upcoming':'À venir','Wellness':'Bien-être','Recreation':'Loisirs','Laundry':'Buanderie',
+  'Order lunch':'Commander le lunch',"Tomorrow's lunch":'Lunch de demain','Place order':'Commander','Schedule order':'Planifier la commande','Checkout':'Paiement','Language':'Langue','Notifications':'Notifications',
+  'Dietary profile':'Profil alimentaire','Goals':'Objectifs','Requirements':'Exigences','Settings':'Paramètres','For you':'Pour vous','Order by 20:00':'Commander avant 20 h','Included in your stay':'Inclus dans votre séjour',
+  'Bread':'Pain','Protein':'Protéine','In the bag':'Dans le sac','Pickup':'Ramassage','Where':'Où','When':'Quand','Deliver to':'Livrer à','Pay with':'Payer avec','Subtotal':'Sous-total','GST':'TPS','Total':'Total',
+  'As soon as possible':'Dès que possible','Required':'Obligatoire','Optional':'Facultatif','Add':'Ajouter','Side':'Accompagnement','Sauce':'Sauce','Milk':'Lait','Noodles':'Nouilles',
+  'Open until':'Ouvert jusqu’à','Opens':'Ouvre à','Open 24 hours':'Ouvert 24 h','Order ahead':"Commander à l'avance",
+  'Join':"S'inscrire",'Leave':'Se désinscrire',"You're going":'Inscrit','spots left':'places restantes','View menu':'Voir le menu','Choose a time':'Choisir une heure',
+  "You're booked":'Réservation confirmée','Add to calendar':'Ajouter au calendrier','Done':'Terminé','Reschedule':'Modifier','Cancel booking':'Annuler la réservation','Close':'Fermer',"You're in":'Inscription confirmée',
+  'How was it?':"C'était comment?",'What stood out':"Ce qui s'est démarqué",'What could be better':'Ce qui pourrait être mieux','Send':'Envoyer','Anything for the chef?':'Un mot pour le chef?',
+  'Taste':'Goût','Temperature':'Température','Portion':'Portion','Freshness':'Fraîcheur','Variety':'Variété','Service':'Service',
+  'Scan':'Scanner','Table 14':'Table 14','Patio':'Terrasse','Resident':'Résident','Departs':'Départ','Scan at the front desk, dining hall and gym':'À scanner à la réception, à la salle à manger et au gym',
+  'No notifications':'Aucune notification','Room ready':'Chambre prête','Order updates':'Suivi des commandes','Booking reminders':'Rappels de réservation','Menus and events':'Menus et activités',
+  'When housekeeping finishes your room':"Quand l'entretien a terminé votre chambre",'Received, ready and on its way':'Reçue, prête et en route','An hour before appointments and classes':'Une heure avant les rendez-vous et les cours',"Today's menu at 10:00 and new events":"Menu du jour à 10 h et nouvelles activités",
+  'Your order is on its way':'Votre commande est en route','Your order is ready':'Votre commande est prête','Lunch is ready for pickup':'Votre lunch est prêt','Order received':'Commande reçue','Order scheduled':'Commande planifiée','Lunch ordered':'Lunch commandé',
+  'Your appointment is confirmed':'Votre rendez-vous est confirmé','Booking cancelled':'Réservation annulée','Thanks for the Foodback':'Merci pour vos commentaires','Passed on to the kitchen team.':"Transmis à l'équipe de cuisine.",'The kitchen manager will follow up.':'Le chef de cuisine fera un suivi.',
+  'Being prepared':'En préparation','On its way':'En route','Ready for pickup':'Prêt à ramasser','Scheduled':'Planifiée','Ordered':'Commandé','Received':'Reçu','Picked up':'Ramassé','Now':'Maintenant',
+  'Pick up at the counter':'Ramassage au comptoir','Pick up at the bar':'Ramassage au bar','Golf simulator · Bay 2':'Simulateur de golf · Baie 2','New order started':'Nouvelle commande',
+  'Dining Hall':'Salle à manger','Room Service':'Service aux chambres','Main building':'Bâtiment principal','Outside the East doors':'Devant les portes Est','Dining Hall, north wall':'Salle à manger, mur nord','Recreation Centre':'Centre récréatif','Delivered to your room':'Livré à votre chambre','Pickup: Dining Hall or bus lot':'Ramassage : salle à manger ou stationnement des autobus',
+  'Breakfast':'Déjeuner','Lunch':'Dîner','Dinner':'Souper','Night shift':'Quart de nuit','Delivery':'Livraison','Every day':'Tous les jours','Order by':'Commander avant','Pub':'Pub','Patio BBQ':'BBQ terrasse','Drinks':'Boissons','Tonight':'Ce soir','Coffee & snacks':'Café et collations','Essentials':'Essentiels',
+  'Massage':'Massage','Barber':'Barbier','Personal trainer':'Entraîneur personnel','Dietitian':'Diététiste','Golf simulator':'Simulateur de golf','Gaming room':'Salle de jeux','Laundry machines':'Machines à laver','Laundry service':'Service de buanderie','Included':'Inclus','From $12':'À partir de 12 $',
+  'Spin':'Vélo stationnaire','Yoga & mobility':'Yoga et mobilité','Wing night':'Soirée ailes de poulet','Five-a-side league':'Ligue de soccer à cinq','Gym':'Gym','Studio':'Studio','Fieldhouse':'Gymnase','Until close':"Jusqu'à la fermeture",'Length':'Durée','Details':'Détails',
+  'High protein':'Riche en protéines','High fibre':'Riche en fibres','Low sodium':'Faible en sodium','Low carb':'Faible en glucides','Vegetarian':'Végétarien','Vegan':'Végane','Gluten-free':'Sans gluten','Dairy-free':'Sans lactose','Halal':'Halal','Nut-free':'Sans noix',
+  'Not':'Pas','Nothing here matches your profile':'Rien ici ne correspond à votre profil','Two drinks per order. ID checked on delivery.':'Deux consommations par commande. Pièce d’identité vérifiée à la livraison.',
+  'Sourdough':'Pain au levain','Whole wheat wrap':'Tortilla de blé entier','Gluten-free bun':'Pain sans gluten','Bowl, no bread':'Bol, sans pain','Turkey':'Dinde','Roast beef':'Rosbif','Grilled chicken':'Poulet grillé','Egg salad':'Salade aux œufs','Falafel':'Falafel',
+  'Fruit cup':'Coupe de fruits','Protein pack':'Collation protéinée','Granola bar':'Barre granola','Cookie':'Biscuit','Bottle of water':"Bouteille d'eau",'Tomorrow · 04:30 – 06:30 · Dining Hall':'Demain · 4 h 30 – 6 h 30 · Salle à manger','Tomorrow · 05:15 · Bus lot kiosk':'Demain · 5 h 15 · Kiosque des autobus','Bus lot kiosk':'Kiosque des autobus',
+  'Visa ending 4242':'Visa se terminant par 4242','Your washer is done':'Votre laveuse a terminé','Your laundry is back':'Votre linge est de retour',
+  'Grill':'Grill','Comfort':'Réconfort','Soup':'Soupe','Deli':'Charcuterie','Hot cereal':'Céréales chaudes','Eggs':'Œufs','Carvery':'Viandes tranchées','Global':'Cuisine du monde','Scoop & Serve':'Scoop & Serve'
+};
+const T = k => S.lang==='FR' ? (FR[k] ?? k) : k;
+const L = o => S.lang==='FR' && o.fr ? o.fr : o.n;
+const D = o => S.lang==='FR' ? (o.dfr||'') : (o.d||'');
+
+/* ---------- brand + data ---------- */
+const BRANDS = {
+  ess:{mark:'ESS', lodge:'Cedar Valley Lodge', pub:'The Pressure Valve', market:'The Market', block:"Xav's Landing", fitness:'Fitness Brigade'},
+  client:{mark:'LOGO', lodge:'North Ridge Lodge', pub:'The Lounge', market:'Camp Store', block:'Spruce Wing', fitness:'Fitness'}
+};
+const B = () => BRANDS[document.documentElement.dataset.brand || 'ess'];
+const GOALS = ['High protein','High fibre','Low sodium','Low carb'];
+const RULES = ['Vegetarian','Vegan','Gluten-free','Dairy-free','Halal','Nut-free'];
+
+const VENUES = {
+  dining:{n:'Dining Hall', img:'salmonbowl', icon:'plate', where:'Main building', open:true, until:'13:30', hours:[['Breakfast','04:30 – 08:30'],['Lunch','11:00 – 13:30'],['Dinner','16:30 – 20:30'],['Night shift','23:00 – 01:00']]},
+  scoop:{n:'Scoop & Serve', img:'chili', icon:'plate', where:'Outside the East doors', open:true, until:'13:30', hours:[['Lunch','11:00 – 13:30']]},
+  flex:{n:'Flex Station', img:'ramen', icon:'spark', where:'Dining Hall, north wall', open:true, until:'13:30', hours:[['Breakfast','05:00 – 08:30'],['Lunch','11:00 – 13:30'],['Dinner','17:00 – 20:00']]},
+  eatclub:{n:'Eat Club', img:'lunchbag', icon:'bag', where:'Pickup: Dining Hall or bus lot', open:true, until:'20:00', hours:[['Order by','20:00'],['Pickup','04:30 – 06:30']]},
+  market:{n:'market', img:'coffee', icon:'shop', where:'Main building', open:true, until:'24h', hours:[['Every day','24 h']]},
+  pub:{n:'pub', img:'pub', icon:'beer', where:'Recreation Centre', open:true, until:'23:00', hours:[['Pub','11:00 – 23:00'],['Patio BBQ','12:00 – 21:00']]},
+  room:{n:'Room Service', img:'steak', icon:'door', where:'Delivered to your room', open:false, opens:'17:00', hours:[['Delivery','17:00 – 22:00']], later:['17:00','17:30','18:00','18:30','19:00']}
+};
+const vname = id => id==='pub' ? B().pub : id==='market' ? B().market : T(VENUES[id].n);
+const vstatus = v => v.open ? (v.until==='24h' ? T('Open 24 hours') : `${T('Open until')} ${v.until}`) : `${T('Opens')} ${v.opens}`;
+const vstat = v => `<span class="vstat ${v.open?'':'closed'}">${vstatus(v)}</span>`;
+
+const ITEMS = {
+  d1:{n:'Grilled chicken, farro & greens', fr:'Poulet grillé, farro et verdures', st:'Grill', tags:['High protein','High fibre','Halal']},
+  d2:{n:'Beef chili, cornbread', fr:'Chili au bœuf, pain de maïs', st:'Comfort', tags:['High protein']},
+  d3:{n:'Roasted squash & lentil soup', fr:'Soupe de courge et lentilles', st:'Soup', tags:['Vegan','High fibre','Gluten-free']},
+  d4:{n:'Carved turkey on sourdough', fr:'Dinde tranchée sur pain au levain', st:'Deli', tags:['High protein','Halal']},
+  d5:{n:'Steel-cut oats, berries, seeds', fr:'Gruau, petits fruits, graines', st:'Hot cereal', tags:['High fibre','Vegan','Low sodium']},
+  d6:{n:'Egg-white & spinach scramble', fr:"Blancs d'œufs brouillés aux épinards", st:'Eggs', tags:['High protein','Low carb','Gluten-free','Vegetarian','Halal']},
+  d7:{n:'Top sirloin, grilled vegetables', fr:'Surlonge, légumes grillés', st:'Carvery', tags:['High protein','Low carb','Gluten-free'], img:'steak'},
+  d8:{n:'Salmon, brown rice, broccoli', fr:'Saumon, riz brun, brocoli', st:'Grill', tags:['High protein','High fibre','Low sodium','Dairy-free','Halal','Gluten-free'], img:'salmonbowl'},
+  d9:{n:'Chickpea curry, basmati', fr:'Cari de pois chiches, basmati', st:'Global', tags:['Vegan','High fibre','Gluten-free']},
+  s1:{n:'Chili bar', fr:'Bar à chili', st:'Scoop & Serve', tags:['High protein','Gluten-free'], img:'chili'},
+  s2:{n:'Build-your-own rice bowl', fr:'Bol de riz à composer', st:'Scoop & Serve', tags:['Dairy-free','High fibre','Halal']},
+  s3:{n:'Soup of the day', fr:'Soupe du jour', st:'Scoop & Serve', tags:['Vegetarian']},
+  f1:{n:'Tonkotsu ramen', fr:'Ramen tonkotsu', d:'Pork broth, chashu, soft egg, scallion, nori.', dfr:'Bouillon de porc, chashu, œuf mollet, oignon vert, nori.', p:17, tags:['High protein'], img:'ramen', mods:'noodle'},
+  f2:{n:'Miso ramen', fr:'Ramen miso', d:'Miso broth, crispy tofu, corn, bok choy.', dfr:'Bouillon miso, tofu croustillant, maïs, bok choy.', p:16, tags:['Vegan'], mods:'noodle'},
+  f3:{n:'Spicy chicken ramen', fr:'Ramen épicé au poulet', d:'Chili broth, grilled thigh, bean sprouts.', dfr:'Bouillon pimenté, cuisse grillée, fèves germées.', p:17, tags:['High protein','Dairy-free','Halal'], mods:'noodle'},
+  p1:{n:'House smash burger', fr:'Burger smash maison', d:'Double patty, cheddar, house sauce, brioche.', dfr:'Double galette, cheddar, sauce maison, brioche.', p:18, tags:['High protein'], mods:'side'},
+  p2:{n:'Wings, 1 lb', fr:'Ailes de poulet, 1 lb', d:'Choice of sauce, celery, blue cheese dip.', dfr:'Sauce au choix, céleri, trempette au bleu.', p:16, tags:['High protein','Gluten-free'], img:'wings', mods:'sauce'},
+  p3:{n:'Poutine', fr:'Poutine', d:'Fresh-cut fries, curds, gravy.', dfr:'Frites fraîches, fromage en grains, sauce brune.', p:11, tags:[]},
+  p4:{n:'Harvest salad, grilled chicken', fr:'Salade des récoltes, poulet grillé', d:'Greens, quinoa, apple, pumpkin seeds.', dfr:'Verdures, quinoa, pomme, graines de citrouille.', p:15, tags:['High protein','High fibre','Gluten-free','Halal']},
+  b1:{n:'Smoked brisket plate', fr:'Assiette de poitrine fumée', d:'12-hour brisket, slaw, cornbread, pickles.', dfr:'Poitrine fumée 12 heures, salade de chou, pain de maïs, cornichons.', p:21, tags:['High protein'], img:'brisket', mods:'side'},
+  b2:{n:'BBQ half chicken', fr:'Demi-poulet BBQ', d:'Dry rub, grilled corn, slaw.', dfr:'Épices sèches, maïs grillé, salade de chou.', p:19, tags:['High protein','Gluten-free','Halal']},
+  b3:{n:'Grilled veggie skewers', fr:'Brochettes de légumes grillés', d:'Peppers, zucchini, red onion, chimichurri.', dfr:'Poivrons, courgette, oignon rouge, chimichurri.', p:13, tags:['Vegan','Low sodium','Low carb','Gluten-free']},
+  k1:{n:'Draught pint', fr:'Pinte en fût', d:'Rotating local lager or IPA.', dfr:'Lager ou IPA locale, selon la semaine.', p:8, tags:[], alc:1},
+  k2:{n:'Craft soda', fr:'Soda artisanal', d:'Ginger, cream or root beer.', dfr:'Gingembre, crème soda ou racinette.', p:4, tags:['Vegan']},
+  r1:{n:'Steak frites', fr:'Steak frites', d:'Sirloin, fries, peppercorn sauce.', dfr:'Surlonge, frites, sauce au poivre.', p:24, tags:['High protein'], img:'steak', mods:'side'},
+  r2:{n:'Club sandwich', fr:'Club sandwich', d:'Turkey, bacon, tomato, fries.', dfr:'Dinde, bacon, tomate, frites.', p:15, tags:['High protein'], mods:'side'},
+  r3:{n:'Greek yogurt parfait', fr:'Parfait au yogourt grec', d:'Granola, berries, honey.', dfr:'Granola, petits fruits, miel.', p:7, tags:['Vegetarian','High protein','Halal'], nuts:1},
+  r4:{n:'Chicken shawarma bowl', fr:'Bol shawarma au poulet', d:'Rice, garlic sauce, pickled turnip, salad.', dfr:"Riz, sauce à l'ail, navet mariné, salade.", p:16, tags:['High protein','Halal','Dairy-free']},
+  m1:{n:'Latte, 16 oz', fr:'Latte, 16 oz', d:'Double shot, choice of milk.', dfr:'Double espresso, lait au choix.', p:5.5, tags:['Vegetarian','Halal'], img:'coffee', mods:'milk'},
+  m2:{n:'Cold brew', fr:'Café infusé à froid', d:'Steeped 18 hours.', dfr:'Infusé 18 heures.', p:5, tags:['Vegan']},
+  m3:{n:'Protein bar', fr:'Barre protéinée', d:'20 g protein.', dfr:'20 g de protéines.', p:3.5, tags:['High protein'], nuts:1},
+  m4:{n:'USB-C charger', fr:'Chargeur USB-C', d:'20 W wall plug and cable.', dfr:'Adaptateur mural 20 W et câble.', p:18, tags:[], nonfood:1}
+};
+// derived tags: vegan implies vegetarian, dairy-free and halal; most items are nut-free
+Object.values(ITEMS).forEach(it=>{ if(it.tags.includes('Vegan')) ['Vegetarian','Dairy-free','Halal'].forEach(x=>{ if(!it.tags.includes(x)) it.tags.push(x) }); if(!it.nuts && !it.nonfood) it.tags.push('Nut-free') });
+
+const MENUS = {
+  dining:{Breakfast:['d5','d6'], Lunch:['d1','d2','d3','d4'], Dinner:['d7','d8','d9']},
+  scoop:{Lunch:['s1','s2','s3']},
+  flex:{Lunch:['f1','f2','f3']},
+  pub:{'Pub':['p1','p2','p3','p4'], 'Patio BBQ':['b1','b2','b3'], 'Drinks':['k1','k2']},
+  room:{'Tonight':['r1','r4','r2','r3']},
+  market:{'Coffee & snacks':['m1','m2','m3'], 'Essentials':['m4']}
+};
+const MODS = {
+  noodle:[{g:'Noodles', one:1, o:[['Regular',0,'Normales'],['Extra noodles',2,'Extra nouilles'],['Zucchini noodles',1,'Nouilles de courgette']]},{g:'Add', o:[['Extra egg',1.5,'Œuf supplémentaire',['Vegan']],['Extra chashu',3,'Chashu supplémentaire',['Vegan','Vegetarian','Halal']],['Chili oil',0,'Huile pimentée']]}],
+  side:[{g:'Side', one:1, o:[['Fries',0,'Frites'],['Side salad',0,'Salade'],['Sweet potato fries',2,'Frites de patate douce']]},{g:'Add', o:[['Bacon',2,'Bacon',['Vegan','Vegetarian','Halal']],['Extra meat',5,'Viande supplémentaire',['Vegan','Vegetarian']]]}],
+  sauce:[{g:'Sauce', one:1, o:[['Hot',0,'Piquante'],['Honey garlic',0,'Miel et ail'],['Salt & pepper',0,'Sel et poivre'],['BBQ',0,'BBQ']]}],
+  milk:[{g:'Milk', one:1, o:[['Whole',0,'Entier'],['Oat',.75,"D'avoine"],['Almond',.75,"D'amande",['Nut-free']]]},{g:'Add', o:[['Extra shot',1,'Espresso supplémentaire'],['Vanilla',.5,'Vanille']]}]
+};
+const SERVICES = {
+  massage:{n:'Massage', img:'massage', icon:'hand', len:'60 min', price:'$95', who:'Maya Chen, RMT', ini:'MC', d:'Therapeutic and sports massage, booked around your shift.', dfr:'Massage thérapeutique et sportif, réservé selon votre quart.'},
+  barber:{n:'Barber', img:'barber', icon:'scissors', len:'30 min', price:'$30', who:'Andre M.', ini:'AM', d:'Cuts, fades and beard trims on site.', dfr:'Coupes, dégradés et taille de barbe sur place.'},
+  trainer:{n:'Personal trainer', img:'trainer', icon:'dumbbell', len:'45 min', price:'Included', who:'Will Love', ini:'WL', d:'One-on-one sessions and a plan for your rotation.', dfr:'Séances individuelles et un plan pour votre rotation.'},
+  diet:{n:'Dietitian', img:'fitness', icon:'apple', len:'30 min', price:'Included', who:'Priya N., RD', ini:'PN', d:'Set goals together, then save them to your dietary profile.', dfr:'Fixez vos objectifs, puis enregistrez-les dans votre profil alimentaire.'},
+  golf:{n:'Golf simulator', img:'golfsim', icon:'golf', len:'60 min', price:'Included', who:'Recreation Centre', place:1, d:'Play 20 world courses or hit the range. Order food to your bay.', dfr:'Jouez 20 parcours ou pratiquez votre élan. Commandez à votre baie.', pick:['Bay 1','Bay 2'], pickfr:['Baie 1','Baie 2']},
+  gaming:{n:'Gaming room', img:'gaming', icon:'game', len:'60 min', price:'Included', who:'Recreation Centre', place:1, d:'Reserve a console and a couch.', dfr:'Réservez une console et un divan.', pick:['PS5','Xbox Series X','Switch','PC']},
+  washer:{n:'Laundry machines', img:'', icon:'wash', len:'45 min', price:'Included', who:'Laundry room, your wing', whofr:'Buanderie de votre aile', place:1, d:'Reserve a washer or dryer and get a ping when it is done.', dfr:'Réservez une laveuse ou une sécheuse et recevez un avis à la fin.', pick:['Washer','Dryer'], pickfr:['Laveuse','Sécheuse']},
+  laundry:{n:'Laundry service', img:'', icon:'shirt', len:'24 h', price:'From $12', who:'Valet', whofr:'Service de valet', place:1, d:'Leave the bag at your door. Back folded or hung the next day.', dfr:'Laissez le sac à votre porte. Retour plié ou suspendu le lendemain.', pick:['Wash & fold','Dry cleaning'], pickfr:['Lavage et pliage','Nettoyage à sec']}
+};
+const EVENTS = {
+  spin:{n:'Spin', t:'17:00', where:'Gym', img:'trainer', icon:'dumbbell', len:'45 min', spots:12, d:'High-energy ride to shake off the shift. Bikes and shoes provided.', dfr:'Un entraînement énergique après le quart. Vélos et souliers fournis.'},
+  yoga:{n:'Yoga & mobility', t:'18:00', where:'Studio', img:'fitness', icon:'dumbbell', len:'50 min', spots:6, d:'Stretch out the shift. Mats provided, all levels.', dfr:'Étirez-vous après le quart. Tapis fournis, tous les niveaux.'},
+  wings:{n:'Wing night', t:'19:30', where:'pub', img:'wings', icon:'beer', len:'Until close', d:'Wings at $1 off a pound and the game on every screen.', dfr:'Ailes de poulet à 1 $ de rabais la livre et le match sur tous les écrans.', venue:'pub'},
+  league:{n:'Five-a-side league', t:'20:00', where:'Fieldhouse', img:'', icon:'ball', len:'60 min', spots:4, d:'Crew vs crew. Sign up solo and we will place you on a team.', dfr:'Équipe contre équipe. Inscrivez-vous seul et on vous placera.'}
+};
+const ewhere = e => e.where==='pub' ? B().pub : T(e.where);
+const swho = s => S.lang==='FR' && s.whofr ? s.whofr : T(s.who);
+const sprice = s => s.price.startsWith('$') && S.lang==='FR' ? s.price.slice(1)+' $' : T(s.price);
+
+/* ---------- state ---------- */
+const S = { tab:'home', stacks:{home:[],eat:[],book:[],me:[]}, prefs:new Set(['High protein','High fibre']), roomReady:false,
+  cart:[], cartVenue:null, table:null, where:null, when:null, pay:0, orders:[], bookings:[], unread:0, notes:[], lang:'EN',
+  menuTab:{}, forYou:false, sw:{}, toggles:{'Room ready':true,'Order updates':true,'Booking reminders':true,'Menus and events':false} };
+try{ const p = JSON.parse(localStorage.getItem('cvl-prefs')||'null'); if(Array.isArray(p)) S.prefs = new Set(p) }catch(e){}
+const T0 = Date.now();
+const clock = () => { const m = 12*60 + 10 + Math.floor((Date.now()-T0)/60000); return String(Math.floor(m/60)%24).padStart(2,'0') + ':' + String(m%60).padStart(2,'0') };
+const save = () => { try{ localStorage.setItem('cvl-prefs', JSON.stringify([...S.prefs])) }catch(e){} };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => S.lang==='FR' ? Number(n).toFixed(2).replace('.',',') + ' $' : '$' + Number(n).toFixed(2);
+const photo = (name, icon, cls='') => `<div class="ph ${cls}"><div class="fb">${I[icon]||I.plate}</div>${name?`<img src="img/${name}.jpg" alt="" loading="lazy" onerror="this.remove()">`:''}</div>`;
+const locale = () => S.lang==='FR' ? 'fr-CA' : 'en-CA';
+
+/* dietary logic: requirements must all be met; goals highlight and sort first */
+const fails = t => RULES.filter(r=>S.prefs.has(r) && !t.includes(r));
+const goalHit = t => GOALS.some(g=>S.prefs.has(g) && t.includes(g));
+const tagsHtml = t => t.filter(x=>x!=='Nut-free' || S.prefs.has('Nut-free')).map(x=>`<span class="tag${S.prefs.has(x)?' me':''}">${esc(T(x))}</span>`).join('');
+const notTag = f => `<span class="tag no">${T('Not')} ${esc(T(f).toLowerCase())}</span>`;
+
+/* ---------- navigation ---------- */
+let anim = '';
+function go(view, data={}){ S.stacks[S.tab].push({view, data}); anim='in'; render() }
+function back(){ S.resched=null; S.stacks[S.tab].pop(); anim='back'; render() }
+function tab(t){ S.resched=null; if(S.tab===t) S.stacks[t]=[]; S.tab=t; anim=''; render() }
+function cur(){ const s = S.stacks[S.tab]; return s[s.length-1] }
+function soft(){ anim=''; const v = $('.view'); const y = v?v.scrollTop:0; render(); const n = $('.view'); if(n) n.scrollTop = y }
+
+function setBrand(b){ const o = B(), n = BRANDS[b]; S.notes.forEach(x=>{ ['block','pub','market','lodge'].forEach(f=>{ x.body = x.body.split(o[f]).join(n[f]) }) });
+  S.orders.forEach(x=>{ ['block','pub'].forEach(f=>{ x.where = x.where.split(o[f]).join(n[f]) }) });
+  document.documentElement.dataset.brand=b; $('#b-ess').setAttribute('aria-pressed', b==='ess'); $('#b-client').setAttribute('aria-pressed', b==='client'); $('#r-title').textContent = B().lodge; soft() }
+
+/* ---------- notifications ---------- */
+const NOTE_CAT = {'Your room is ready':'Room ready','Order received':'Order updates','Order scheduled':'Order updates','Your order is on its way':'Order updates','Your order is ready':'Order updates'};
+function notify(title, body){ S.notes.unshift({title, body, at:clock()}); S.unread++;
+  if(cur()?.view==='notes') soft();
+  if(NOTE_CAT[title] && !S.toggles[NOTE_CAT[title]]) return;
+  const b = $('#banner'); b.innerHTML = `<div class="appi">${B().mark}</div><div class="t"><b>${esc(T(title))}</b><span>${esc(body)}</span></div><div class="when">${S.lang==='FR'?'maint.':'now'}</div>`;
+  b.classList.add('on'); clearTimeout(b._t); b._t = setTimeout(()=>b.classList.remove('on'), 4200);
+  const bell = document.querySelector('[data-bell]'); if(bell && !bell.querySelector('.dot')) bell.insertAdjacentHTML('beforeend','<span class="dot"></span>') }
+
+/* ---------- sheet ---------- */
+function openSheet(html){ $('#sheet').innerHTML = `<div class="grab"></div>` + html; $('#sheet').classList.add('on'); $('#scrim').classList.add('on') }
+function closeSheet(){ $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on') }
+
+/* ---------- shared pieces ---------- */
+function navbar(title){ const s = S.stacks[S.tab];
+  let prev = s.length>1 ? (s[s.length-2].data.title||'Back') : {home:'Home',eat:'Eat',book:'Book',me:'Me'}[S.tab]; prev = T(prev); if(prev.length>10) prev = T('Back');
+  return `<div class="navbar"><button class="backbtn" onclick="back()">${I.back}${esc(prev)}</button><div class="ttl">${esc(T(title))}</div></div>` }
+function coverNav(extra=''){ return `<div class="floatnav"><button class="round" aria-label="${T('Back')}" onclick="back()">${I.back.replace('viewBox','style="width:10px;height:17px" viewBox')}</button>${extra}</div>` }
+function topIcons(){ return `<button class="iconbtn" aria-label="${T('Scan')}" onclick="go('scan',{title:'Scan'})">${I.qr}</button><button class="iconbtn" data-bell aria-label="${T('Notifications')}" onclick="go('notes',{title:'Notifications'})">${I.bell}${S.unread?'<span class="dot"></span>':''}</button>` }
+function largeTitle(t, small=''){ return `<div class="large"><div>${small?`<small>${esc(small)}</small>`:''}<h1>${esc(t)}</h1></div><div style="display:flex">${topIcons()}</div></div>` }
+const dayLabel = i => { const d = new Date(2026,10,16+i); return i===0 ? T('Today') : i===1 ? T('Tomorrow') : d.toLocaleDateString(locale(),{weekday:'short', day:'numeric'}) };
+
+/* ---------- views ---------- */
+const V = {};
+
+V.home = () => {
+  const r = S.roomReady, live = S.orders.filter(o=>o.state<3);
+  const sched = S.bookings.slice().sort((a,b)=>a.day-b.day || a.t.localeCompare(b.t));
+  return `<div class="stack">
+  ${largeTitle('Jordan', T('Good afternoon'))}
+  <div class="hero">
+    <img src="img/lodge.jpg" alt="">
+    <div class="in">
+      <small>${T('Rotation 14 · Nov 16 – 30')}</small>
+      <div class="room">${esc(B().block)}<br>${T('Room')} 123</div>
+      <span class="pill ${r?'ok':''}">${r?T('Your room is ready'):T('Being prepared · about 40 min')}</span>
+    </div>
+  </div>
+  ${live.map(liveCard).join('')}
+  ${sched.length?`<div class="h2"><h2>${T('Your schedule')}</h2><button onclick="tab('book')">${T('See all')}</button></div>
+  <div class="group">${sched.slice(0,3).map(schedRow).join('')}</div>`:''}
+  <div class="h2"><h2>${T('Eat & drink')}</h2><button onclick="tab('eat')">${T('See all')}</button></div>
+  <div class="rail-x">${Object.entries(VENUES).filter(([,v])=>v.open).map(([id,v])=>`<button class="vcard" onclick="S.stacks.eat=[];tab('eat');openVenue('${id}')">${photo(v.img, v.icon)}<div><b>${esc(vname(id))}</b>${vstat(v)}</div></button>`).join('')}</div>
+  <div class="h2"><h2>${T('Today')}</h2></div>
+  <div class="group">${Object.entries(EVENTS).map(([k,e])=>`<button class="cell" style="--inset:88px" onclick="go('event',{k:'${k}',title:'${e.n}'})"><span class="time">${e.t}</span><div class="t"><b>${esc(T(e.n))}</b><span>${esc(ewhere(e))}</span></div>${going(e.n)?`<span class="pill">${T("You're going")}</span>`:I.chev}</button>`).join('')}</div>
+  </div>` };
+const going = n => S.bookings.some(b=>b.n===n);
+function schedRow(b){ const i = S.bookings.indexOf(b);
+  return `<button class="cell" style="--inset:88px" onclick="manage(${i})"><span class="time"><small>${esc(dayLabel(b.day))}</small>${b.t}</span><div class="t"><b>${esc(T(b.n))}</b><span>${esc(b.whereFn?b.whereFn():b.where)}</span></div>${I.chev}</button>` }
+
+function liveCard(o){
+  if(o.sched && o.state<2) return `<div class="live"><div class="top"><div class="thumb" style="width:44px;height:44px">${photo(VENUES[o.venue].img, VENUES[o.venue].icon)}</div><div class="t"><b>${T(o.later?'Ordered':'Scheduled')}</b><span>${esc(vname(o.venue))} · ${esc(o.where)}</span></div><div class="eta" style="font-size:17px">${o.later?esc(T('Tomorrow'))+' ':''}${esc(o.sched)}</div></div></div>`;
+  const del = o.mode==='deliver'; const st = T(['Order received','Being prepared', del?'On its way':'Ready for pickup'][o.state]);
+  return `<div class="live"><div class="top"><div class="thumb" style="width:44px;height:44px">${photo(VENUES[o.venue].img, VENUES[o.venue].icon)}</div>
+  <div class="t"><b>${esc(st)}</b><span>${esc(vname(o.venue))} · ${esc(o.where)}</span></div><div class="eta">${o.state===2?T('Now'):o.eta+' min'}</div></div>
+  <div class="bar">${[0,1,2].map(i=>`<i class="${o.state>=i?'on':''}"></i>`).join('')}</div>
+  ${o.state===2?`<button class="btn alt" style="height:42px;font-size:15px" onclick="finish(${o.id})">${T(del?'Received':'Picked up')}</button>`:''}</div>` }
+
+V.event = d => { const e = EVENTS[d.k], g = going(e.n);
+  return `<div class="cover">${photo(e.img, e.icon)}${coverNav()}</div>
+  <div class="stack" style="gap:20px">
+  <div class="vhead"><h1>${esc(T(e.n))}</h1><p>${esc(D(e))}</p></div>
+  <div class="facts"><div><small>${T('Today')}</small><b>${e.t}</b></div><div><small>${T('Length')}</small><b>${esc(T(e.len))}</b></div><div><small>${T('Where')}</small><b>${esc(ewhere(e))}</b></div></div>
+  ${e.spots?`<div class="note" style="margin-top:-10px">${e.spots - (g?1:0)} ${T('spots left')}</div>`:''}
+  <div class="pad" style="display:flex;flex-direction:column;gap:10px">
+    ${e.venue?`<button class="btn" onclick="S.stacks[S.tab].pop();S.stacks.eat=[];tab('eat');openVenue('${e.venue}')">${T('View menu')}</button>`:''}
+    <button class="btn ${e.venue||g?'alt':''}" onclick="toggleEvent('${d.k}')">${g?T('Leave'):T('Join')}</button>
+  </div></div>` };
+function toggleEvent(k){ const e = EVENTS[k];
+  if(going(e.n)){ S.bookings = S.bookings.filter(b=>b.n!==e.n); soft(); return }
+  S.bookings.push({n:e.n, icon:e.icon, day:0, t:e.t, whereFn:()=>ewhere(e), ev:k}); soft(); notify("You're in", `${T(e.n)} · ${e.t}`) }
+
+V.eat = () => `<div class="stack">
+  ${largeTitle(T('Eat & drink'))}
+  ${S.table?`<div class="banner2">${I.qr}${esc(S.table)}</div>`:''}
+  <div class="group">${Object.entries(VENUES).map(([id,v])=>`<button class="cell" style="--inset:80px" onclick="openVenue('${id}')"><div class="thumb">${photo(v.img, v.icon)}</div><div class="t"><b>${esc(vname(id))}</b><span>${vstatus(v)}</span></div>${I.chev}</button>`).join('')}</div>
+  </div>`;
+
+function openVenue(id){ if(id==='eatclub') return go('eatclub',{title:'Eat Club'}); go('venue',{id, title:vname(id)}) }
+
+V.venue = d => { const id=d.id, v=VENUES[id], m=MENUS[id], secs=Object.keys(m);
+  const def = id==='dining' ? 'Lunch' : secs[0]; const sec = S.menuTab[id] && m[S.menuTab[id]] ? S.menuTab[id] : def;
+  const orderable = !['dining','scoop'].includes(id);
+  let list = m[sec].map(k=>[k,ITEMS[k]]).filter(([,it])=>!S.forYou || (!fails(it.tags).length && !it.nonfood));
+  list.sort((a,b)=> (fails(a[1].tags).length>0) - (fails(b[1].tags).length>0) || goalHit(b[1].tags) - goalHit(a[1].tags));
+  const cartN = S.cartVenue===id ? S.cart.reduce((a,c)=>a+c.q,0) : 0, cartT = S.cart.reduce((a,c)=>a+c.total,0);
+  return `
+  <div class="cover">${photo(v.img, v.icon)}${coverNav(id==='dining'?`<button class="round" aria-label="Foodback" onclick="openFoodback('${T('Dining Hall')} · ${T(sec)}')">${I.star.replace('<svg','<svg style="color:var(--star)"')}</button>`:'')}</div>
+  <div class="stack" style="gap:18px">
+  <div class="vhead"><h1>${esc(vname(id))}</h1><div class="meta">${vstat(v)}<span>·</span><span>${esc(T(v.where))}</span></div>
+    <div class="meta">${v.hours.map(([a,b])=>`<span><b style="color:var(--fg);font-weight:600">${T(a)}</b> ${b}</span>`).join('<span>·</span>')}</div></div>
+  ${S.table && id==='pub'?`<div class="banner2">${I.qr}${esc(S.table)}</div>`:''}
+  ${!v.open && orderable?`<div class="banner2">${I.clock}${T('Order ahead')} · ${T('Opens')} ${v.opens}</div>`:''}
+  <div class="chips">${secs.length>1?secs.map(x=>`<button class="chip" aria-pressed="${x===sec}" onclick="S.menuTab['${id}']='${x}';soft()">${T(x)}</button>`).join(''):''}${secs.length>1?'<span class="chipsep"></span>':''}<button class="chip filter" aria-pressed="${S.forYou}" onclick="S.forYou=!S.forYou;soft()">${I.check}${T('For you')}</button></div>
+  <div class="group">${list.length?list.map(([k,it])=>{ const f = it.nonfood?[]:fails(it.tags);
+    return `<${orderable?'button':'div'} class="item ${f.length?'nofit':''}" ${orderable?`onclick="openItem('${k}','${id}')"`:''}>
+      <div class="t">${!orderable?`<span class="station">${esc(T(it.st))}</span>`:''}<b>${esc(L(it))}</b>${D(it)?`<p>${esc(D(it))}</p>`:''}${orderable?`<span class="price">${money(it.p)}</span>`:''}<div>${f.length?notTag(f[0]):tagsHtml(it.tags)}</div></div>
+      ${it.img?`<div class="thumb" style="width:84px;height:84px;border-radius:12px">${photo(it.img, v.icon)}</div>`:''}
+      ${orderable?`<span class="plus" aria-hidden="true">+</span>`:''}
+    </${orderable?'button':'div'}>`}).join(''):`<div class="cell"><div class="t"><span>${T('Nothing here matches your profile')}</span></div></div>`}</div>
+  ${cartN?`<div class="cartpill"><button class="btn" onclick="go('checkout',{title:'Checkout'})"><span class="n">${cartN}</span><span>${T('Checkout')}</span><span class="price">${money(cartT)}</span></button></div>`:''}
+  </div>` };
+
+/* item sheet with modifiers */
+let draft = null;
+function openItem(k, venue){ const it = ITEMS[k]; draft = {k, venue, q:1, sel:{}};
+  (MODS[it.mods]||[]).forEach((g,gi)=>{ draft.sel[gi] = g.one ? new Set([0]) : new Set() }); drawItem() }
+function drawItem(){ const it = ITEMS[draft.k], groups = MODS[it.mods]||[], v = VENUES[draft.venue];
+  const extra = groups.reduce((a,g,gi)=>a+[...draft.sel[gi]].reduce((s,oi)=>s+g.o[oi][1],0),0), total = (it.p+extra)*draft.q;
+  const broken = new Set(groups.flatMap((g,gi)=>[...draft.sel[gi]].flatMap(oi=>g.o[oi][3]||[])));
+  const f = it.nonfood?[]:fails(it.tags.filter(t=>!broken.has(t)));
+  const y = draft.keep ? ($('#sheet .body')||{}).scrollTop||0 : 0; draft.keep = 0;
+  openSheet(`<div class="body">${it.img?`<div class="shero">${photo(it.img, v.icon)}</div>`:''}
+    <div class="stack" style="gap:18px;padding-top:${it.img?16:30}px">
+    <div class="pad"><h3>${esc(L(it))}</h3><p style="margin:6px 0 0;color:var(--fg2)">${esc(D(it))}</p><div>${f.length?notTag(f[0]):tagsHtml(it.tags)}</div></div>
+    ${groups.map((g,gi)=>`<div><div class="glabel"><span>${T(g.g)}</span><span>${T(g.one?'Required':'Optional')}</span></div><div class="group">${g.o.map(([n,p,fr,br],oi)=>{ const base = fails(it.tags), of = br ? fails(it.tags.filter(t=>!br.includes(t))).filter(x=>!base.includes(x)) : []; return `<button class="opt" role="${g.one?'radio':'checkbox'}" aria-checked="${draft.sel[gi].has(oi)}" onclick="pick(${gi},${oi})" ${of.length?'style="opacity:.45"':''}><span class="mark ${g.one?'':'sq'}">${I.check}</span><span class="t">${S.lang==='FR'?fr:n}</span>${of.length?notTag(of[0]):''}${p?`<span style="color:var(--fg2)">+${money(p)}</span>`:''}</button>`}).join('')}</div></div>`).join('')}
+    ${it.alc?`<div class="pad" style="color:var(--fg2);font-size:13px">${T('Two drinks per order. ID checked on delivery.')}</div>`:''}
+    </div></div>
+    <div class="foot"><div class="stepper"><button aria-label="-" onclick="draft.q=Math.max(1,draft.q-1);drawItem()">−</button><span>${draft.q}</span><button aria-label="+" onclick="draft.q=Math.min(${it.alc?2:9},draft.q+1);drawItem()">+</button></div>
+    <button class="btn" onclick="addDraft(${total})">${T('Add')} · ${money(total)}</button></div>`);
+  if(y) $('#sheet .body').scrollTop = y }
+function pick(gi, oi){ const g = MODS[ITEMS[draft.k].mods][gi]; draft.keep = 1; if(g.one) draft.sel[gi] = new Set([oi]); else draft.sel[gi].has(oi)?draft.sel[gi].delete(oi):draft.sel[gi].add(oi); drawItem() }
+function addDraft(total){ const it = ITEMS[draft.k], groups = MODS[it.mods]||[];
+  const notes = groups.flatMap((g,gi)=>[...draft.sel[gi]].map(oi=>S.lang==='FR'?g.o[oi][2]:g.o[oi][0])).filter(n=>!['Regular','Whole','Normales','Entier'].includes(n));
+  if(S.cartVenue && S.cartVenue!==draft.venue){ S.cart = []; notify('New order started', vname(draft.venue)) }
+  S.cartVenue = draft.venue; S.cart.push({n:L(it), q:draft.q, total, notes}); closeSheet(); soft() }
+
+V.checkout = () => { const v = S.cartVenue, ven = VENUES[v], t = S.cart.reduce((a,c)=>a+c.total,0), gst = Math.round(t*5)/100, tot = t+gst;
+  const opts = v==='pub' ? [...(S.table?[S.table]:[]), T('Pick up at the bar'), T('Golf simulator · Bay 2')] : v==='room' ? [`${B().block} · ${T('Room')} 123`] : [T('Pick up at the counter')];
+  if(!opts.includes(S.where)) S.where = opts[0];
+  const whens = ven.open ? ['As soon as possible','17:30','18:00','18:30'] : ven.later;
+  if(!whens.includes(S.when)) S.when = whens[0];
+  const asap = S.when==='As soon as possible';
+  return `${navbar('Checkout')}<div class="stack">
+  <div class="group">${S.cart.map(c=>`<div class="cell"><span style="color:var(--fg2);font-weight:600;width:22px">${c.q}×</span><div class="t"><b>${esc(c.n)}</b>${c.notes.length?`<span>${esc(c.notes.join(', '))}</span>`:''}</div><span class="price">${money(c.total)}</span></div>`).join('')}</div>
+  <div><div class="glabel"><span>${T('When')}</span></div><div class="chips">${whens.map(w=>`<button class="chip" aria-pressed="${S.when===w}" onclick="S.when='${w}';soft()">${T(w)}</button>`).join('')}</div></div>
+  <div><div class="glabel"><span>${T(v==='room'?'Deliver to':'Where')}</span></div><div class="group">${opts.map((o,i)=>`<button class="opt" role="radio" aria-checked="${S.where===o}" onclick="S.where=${JSON.stringify(o).replace(/"/g,'&quot;')};soft()"><span class="mark">${I.check}</span><span class="t">${esc(o)}</span></button>`).join('')}</div></div>
+  <div><div class="glabel"><span>${T('Pay with')}</span></div><div class="group">${[['Apple Pay',I.apay],[T('Visa ending 4242'),'']].map(([n,ic],i)=>`<button class="opt" role="radio" aria-checked="${S.pay===i}" onclick="S.pay=${i};soft()"><span class="mark">${I.check}</span><span class="t" style="display:flex;gap:6px;align-items:center">${ic}${n}</span></button>`).join('')}</div></div>
+  <div class="group">
+    <div class="cell"><div class="t"><span style="font-size:15px;color:var(--fg)">${T('Subtotal')}</span></div><span class="price" style="font-weight:500">${money(t)}</span></div>
+    <div class="cell"><div class="t"><span style="font-size:15px;color:var(--fg)">${T('GST')}</span></div><span class="price" style="font-weight:500">${money(gst)}</span></div>
+    <div class="cell"><div class="t"><b>${T('Total')}</b></div><span class="price">${money(tot)}</span></div>
+  </div>
+  <div class="pad"><button class="btn" onclick="placeOrder()">${T(asap?'Place order':'Schedule order')} · ${money(tot)}</button></div>
+  </div>` };
+
+let oid = 1;
+function placeOrder(){ const v = S.cartVenue, where = S.where, asap = S.when==='As soon as possible';
+  const o = {id:oid++, venue:v, label:vname(v), where, mode: /Pick|Ramassage/.test(where) ? 'pickup' : 'deliver', state:0, eta: v==='pub'?14:v==='room'?25:6, sched: asap?null:S.when};
+  S.orders.unshift(o); S.cart=[]; S.cartVenue=null; S.table=null; S.where=null; S.when=null; S.stacks.eat=[]; S.tab='home'; anim=''; render();
+  if(o.sched){ notify('Order scheduled', `${o.label} · ${o.sched} · ${o.where}`); return }
+  notify('Order received', `${o.label} · ${o.where}`); advance(o) }
+function advance(o){ setTimeout(()=>{ o.state=1; o.eta=Math.max(2,o.eta-4); soft() }, 2600);
+  setTimeout(()=>{ o.state=2; soft(); notify(o.mode==='deliver'?'Your order is on its way':'Your order is ready', o.where) }, 7000) }
+function finish(id){ const o = S.orders.find(x=>x.id===id); o.state=3; soft(); openFoodback(o.label) }
+
+V.eatclub = () => { const sw = S.sw; sw.pick ??= 0; sw.extras ??= new Set([0]);
+  const V4 = ['Vegan','Vegetarian','Halal','Dairy-free','Nut-free'];
+  const bread=[['Sourdough',V4],['Whole wheat wrap',['High fibre',...V4]],['Gluten-free bun',['Gluten-free',...V4]],['Bowl, no bread',['Low carb','Gluten-free',...V4]]];
+  const prot=[['Turkey',['High protein','Halal','Gluten-free','Dairy-free','Nut-free']],['Roast beef',['High protein','Gluten-free','Dairy-free','Nut-free']],['Grilled chicken',['High protein','Halal','Gluten-free','Dairy-free','Nut-free']],['Egg salad',['Vegetarian','Halal','Gluten-free','Dairy-free','Nut-free']],['Falafel',['High fibre','Gluten-free',...V4]]];
+  const firstFit = arr => Math.max(0, arr.findIndex(([,t])=>!fails(t).length));
+  sw.bread ??= firstFit(bread); sw.prot ??= firstFit(prot);
+  const bad = fails(bread[sw.bread][1]).length || fails(prot[sw.prot][1]).length;
+  const extras=['Fruit cup','Protein pack','Granola bar','Cookie','Bottle of water'];
+  const pick=['Tomorrow · 04:30 – 06:30 · Dining Hall','Tomorrow · 05:15 · Bus lot kiosk'];
+  const grp = (label, arr, key) => `<div><div class="glabel"><span>${T(label)}</span></div><div class="group">${arr.map(([n,t],i)=>{ const f = fails(t); return `<button class="opt" role="radio" aria-checked="${sw[key]===i}" onclick="S.sw.${key}=${i};soft()" ${f.length?'style="opacity:.45"':''}><span class="mark">${I.check}</span><span class="t">${T(n)}</span><span>${f.length?notTag(f[0]):tagsHtml(t.filter(x=>GOALS.includes(x)||S.prefs.has(x)))}</span></button>`}).join('')}</div></div>`;
+  return `
+  <div class="cover">${photo('lunchbag','bag')}${coverNav()}</div>
+  <div class="stack" style="gap:18px">
+  <div class="vhead"><h1>${T("Tomorrow's lunch")}</h1><div class="meta"><span>${T('Order by 20:00')}</span><span>·</span><span>${T('Included in your stay')}</span></div></div>
+  ${grp('Bread', bread, 'bread')}${grp('Protein', prot, 'prot')}
+  <div><div class="glabel"><span>${T('In the bag')}</span></div><div class="group">${extras.map((n,i)=>`<button class="opt" role="checkbox" aria-checked="${sw.extras.has(i)}" onclick="S.sw.extras.has(${i})?S.sw.extras.delete(${i}):S.sw.extras.add(${i});soft()"><span class="mark sq">${I.check}</span><span class="t">${T(n)}</span></button>`).join('')}</div></div>
+  <div><div class="glabel"><span>${T('Pickup')}</span></div><div class="group">${pick.map((n,i)=>`<button class="opt" role="radio" aria-checked="${sw.pick===i}" onclick="S.sw.pick=${i};soft()"><span class="mark">${I.check}</span><span class="t">${T(n)}</span></button>`).join('')}</div></div>
+  <div class="pad"><button class="btn" ${bad?'disabled':''} onclick="eatClub(${sw.prot},${sw.bread},${sw.pick})">${T('Order lunch')}</button></div>
+  </div>` };
+function eatClub(p, b, k){ const prot=['Turkey','Roast beef','Grilled chicken','Egg salad','Falafel'][p], bread=['Sourdough','Whole wheat wrap','Gluten-free bun','Bowl, no bread'][b];
+  const where = k ? T('Bus lot kiosk') : T('Dining Hall') + ' · B4';
+  const o = {id:oid++, venue:'eatclub', label:`${T(prot)}, ${T(bread).toLowerCase()}`, where, mode:'pickup', state:0, sched: (k?'05:15':'04:30'), later:1};
+  S.orders.unshift(o); S.stacks.eat=[]; S.tab='home'; anim=''; render(); notify('Lunch ordered', `${T('Tomorrow')} · ${where}`);
+}
+
+/* booking */
+V.book = () => { const up = S.bookings.slice().sort((a,b)=>a.day-b.day || a.t.localeCompare(b.t));
+  return `<div class="stack">
+  ${largeTitle(T('Book'))}
+  ${up.length?`<div class="h2"><h2>${T('Upcoming')}</h2></div><div class="group">${up.map(schedRow).join('')}</div>`:''}
+  ${[['Wellness',['massage','barber']],[B().fitness,['trainer','diet']],['Recreation',['golf','gaming']],['Laundry',['washer','laundry']]].map(([h,ids])=>`
+  <div class="h2"><h2>${esc(T(h))}</h2></div>
+  <div class="group">${ids.map(id=>{const s=SERVICES[id];return `<button class="cell" style="--inset:80px" onclick="go('service',{id:'${id}',title:'${s.n}'})"><div class="thumb">${photo(s.img, s.icon)}</div><div class="t"><b>${T(s.n)}</b><span>${s.len} · ${sprice(s)}</span></div>${I.chev}</button>`}).join('')}</div>`).join('')}
+  </div>` };
+
+V.service = d => { const s = SERVICES[d.id], k = d.id; S.sw['day'+k] ??= 0; S.sw['pk'+k] ??= 0;
+  const di = S.sw['day'+k];
+  const slots = k==='laundry' ? ['06:00','18:00'] : ['06:00','06:30','07:00','12:00','12:30','17:30','18:00','18:30','19:00','19:30','20:00','20:30'];
+  const taken = new Set(di===0?['06:00','07:00','12:30','18:00','19:30']:['17:30','18:30']);
+  if(di===0) slots.forEach(t=>{ if(t<clock()) taken.add(t) });
+  S.bookings.forEach(b=>{ if(b.k===k && b.day===di && b!==S.resched) taken.add(b.t) });
+  const sel = S.sw['slot'+k], picks = S.lang==='FR' && s.pickfr ? s.pickfr : s.pick;
+  return `
+  <div class="cover">${photo(s.img, s.icon)}${coverNav()}</div>
+  <div class="stack" style="gap:20px">
+  <div class="vhead"><h1>${T(s.n)}</h1><div class="meta"><span>${s.len}</span><span>·</span><span>${sprice(s)}</span></div><p>${esc(D(s))}</p></div>
+  <div class="pad who">${s.place?`<div class="glyph" style="width:44px;height:44px;border-radius:50%">${I[s.icon]}</div>`:`<div class="avatar">${s.ini}</div>`}<b style="font-weight:600">${esc(swho(s))}</b></div>
+  ${picks?`<div class="chips">${picks.map((p,i)=>`<button class="chip" aria-pressed="${S.sw['pk'+k]===i}" onclick="S.sw['pk${k}']=${i};soft()">${p}</button>`).join('')}</div>`:''}
+  <div class="days">${[0,1,2,3,4,5,6].map(i=>{ const x = new Date(2026,10,16+i); return `<button class="day" aria-pressed="${di===i}" onclick="S.sw['day${k}']=${i};S.sw['slot${k}']=null;soft()"><small>${i===0?T('Today'):x.toLocaleDateString(locale(),{weekday:'short'})}</small><b>${x.getDate()}</b></button>`}).join('')}</div>
+  <div class="slots">${slots.map(t=>`<button class="slot" ${taken.has(t)?'disabled':''} aria-pressed="${sel===t}" onclick="S.sw['slot${k}']='${t}';soft()">${t}</button>`).join('')}</div>
+  <div class="pad"><button class="btn" ${sel?'':'disabled'} onclick="confirmBook('${k}')">${sel?`${T('Book')} · ${dayLabel(di)} ${sel}`:T('Choose a time')}</button></div>
+  </div>` };
+function confirmBook(k){ const s = SERVICES[k], di = S.sw['day'+k], t = S.sw['slot'+k];
+  const picks = S.lang==='FR' && s.pickfr ? s.pickfr : s.pick, extra = picks ? ' · ' + picks[S.sw['pk'+k]] : '';
+  const where = swho(s) + extra;
+  if(S.resched && S.resched.k===k) S.bookings = S.bookings.filter(b=>b!==S.resched); S.resched = null;
+  S.bookings.push({n:s.n, icon:s.icon, day:di, t, where, k}); S.sw['slot'+k]=null;
+  openSheet(`<div class="body" style="padding-top:20px"><div class="done"><div class="ok">${I.check}</div><h3>${T("You're booked")}</h3><p>${esc(T(s.n))} · ${esc(dayLabel(di))} ${t}</p><p>${esc(where)}</p></div></div>
+    <div class="foot"><button class="btn alt" onclick="closeSheet()">${I.calendar.replace('<svg','<svg width="20" height="20"')} ${T('Add to calendar')}</button><button class="btn" onclick="closeSheet();S.stacks.book=[];soft()">${T('Done')}</button></div>`);
+  notify('Your appointment is confirmed', `${T(s.n)} · ${dayLabel(di)} ${t}`);
+  if(k==='washer'||k==='laundry') setTimeout(()=>notify(k==='washer'?'Your washer is done':'Your laundry is back', k==='washer'?'#4':T('Room')+' 123'), 9000) }
+function manage(i){ const b = S.bookings[i];
+  openSheet(`<div class="body" style="padding-top:26px"><div class="stack" style="gap:16px"><div class="pad"><h3>${esc(T(b.n))}</h3><p style="margin:6px 0 0;color:var(--fg2)">${esc(dayLabel(b.day))} · ${b.t} · ${esc(b.whereFn?b.whereFn():b.where)}</p></div>
+  <div class="group">${b.ev?`<button class="cell" onclick="closeSheet();go('event',{k:'${b.ev}',title:'${b.n}'})"><div class="t"><b>${T('Details')}</b></div>${I.chev}</button>`:`<button class="cell" onclick="closeSheet();tab('book');S.resched=S.bookings[${i}];S.sw['day${b.k}']=${b.day};S.sw['slot${b.k}']=null;go('service',{id:'${b.k}',title:'${b.n}'})"><div class="t"><b>${T('Reschedule')}</b></div>${I.chev}</button>`}
+  <button class="cell" onclick="cancelBooking(${i})"><div class="t"><b style="color:var(--red)">${T('Cancel booking')}</b></div></button></div></div></div><div class="foot"><button class="btn alt" onclick="closeSheet()">${T('Close')}</button></div>`) }
+function cancelBooking(i){ const b = S.bookings.splice(i,1)[0]; closeSheet(); soft(); notify('Booking cancelled', T(b.n)) }
+
+/* foodback */
+let fb = {};
+function openFoodback(what){ fb = {what, stars:0, chips:new Set()}; drawFb() }
+function drawFb(){ const ta = $('#fb-note'); if(ta) fb.note = ta.value; const chips = ['Taste','Temperature','Portion','Freshness','Variety','Service'];
+  openSheet(`<div class="body" style="padding-top:26px"><div class="stack" style="gap:20px">
+  <div class="pad" style="text-align:center"><h3>${T('How was it?')}</h3><p style="margin:6px 0 0;color:var(--fg2)">${esc(fb.what)}</p></div>
+  <div class="stars">${[1,2,3,4,5].map(n=>`<button aria-label="${n}" class="${fb.stars>=n?'on':''}" onclick="fb.stars=${n};drawFb()">${I.star}</button>`).join('')}</div>
+  ${fb.stars?`<div class="pad"><div class="glabel" style="padding:0 0 8px"><span>${T(fb.stars>=4?'What stood out':'What could be better')}</span></div><div class="wrapchips">${chips.map(c=>`<button class="chip" aria-pressed="${fb.chips.has(c)}" onclick="fb.chips.has('${c}')?fb.chips.delete('${c}'):fb.chips.add('${c}');drawFb()">${T(c)}</button>`).join('')}</div></div>
+  <div class="pad"><textarea id="fb-note" placeholder="${T('Anything for the chef?')}" aria-label="Comment">${esc(fb.note||'')}</textarea></div>`:''}
+  </div></div><div class="foot"><button class="btn" ${fb.stars?'':'disabled'} onclick="closeSheet();notify('Thanks for the Foodback', T(${fb.stars>=4}?'Passed on to the kitchen team.':'The kitchen manager will follow up.'))">${T('Send')}</button></div>`) }
+
+V.scan = () => `${navbar('Scan')}<div class="stack">
+  <div class="pad"><div style="height:220px;border-radius:18px;background:#0d1114;position:relative;overflow:hidden"><img src="img/pub.jpg" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.45;filter:blur(2px)"><div style="position:absolute;inset:50px 90px;border:3px solid #fff;border-radius:16px;clip-path:polygon(0 0,30% 0,30% 6px,70% 6px,70% 0,100% 0,100% 30%,calc(100% - 6px) 30%,calc(100% - 6px) 70%,100% 70%,100% 100%,70% 100%,70% calc(100% - 6px),30% calc(100% - 6px),30% 100%,0 100%,0 70%,6px 70%,6px 30%,0 30%)"></div></div></div>
+  <div class="group">
+    <button class="cell" style="--inset:58px" onclick="scanTable()"><div class="glyph">${I.beer}</div><div class="t"><b>${T('Table 14')}</b><span>${esc(B().pub)} · ${T('Patio')}</span></div>${I.chev}</button>
+    <button class="cell" style="--inset:58px" onclick="back();openFoodback('${T('Dining Hall')} · ${T('Lunch')}')"><div class="glyph">${I.star}</div><div class="t"><b>Foodback</b><span>${T('Dining Hall')}</span></div>${I.chev}</button>
+  </div></div>`;
+function scanTable(){ S.table = `${T('Patio')} · ${T('Table 14')}`; S.where = S.table; Object.keys(S.stacks).forEach(k=>S.stacks[k]=[]); S.tab='eat'; S.menuTab.pub='Patio BBQ'; go('venue',{id:'pub', title:vname('pub')}) }
+
+V.notes = () => { S.unread = 0;
+  return `${navbar('Notifications')}<div class="stack">${S.notes.length?`<div class="group">${S.notes.map(n=>`<div class="cell" style="--inset:56px"><div class="glyph" style="font-size:9px;font-weight:700">${B().mark}</div><div class="t"><b>${esc(T(n.title))}</b><span>${esc(n.body)}</span></div><span style="color:var(--fg3);font-size:12px;align-self:flex-start;margin-top:3px">${n.at}</span></div>`).join('')}</div>`:`<div class="pad" style="color:var(--fg2);text-align:center;padding-top:40px">${T('No notifications')}</div>`}</div>` };
+
+const NOTIF_DESC = {'Room ready':'When housekeeping finishes your room','Order updates':'Received, ready and on its way','Booking reminders':'An hour before appointments and classes','Menus and events':"Today's menu at 10:00 and new events"};
+V.notifset = () => `${navbar('Notifications')}<div class="stack"><div class="group">${Object.keys(S.toggles).map(n=>`<div class="cell"><div class="t"><b style="font-weight:500">${T(n)}</b><span>${T(NOTIF_DESC[n])}</span></div><button class="switch" role="switch" aria-label="${T(n)}" aria-checked="${S.toggles[n]}" onclick="S.toggles['${n}']=!S.toggles['${n}'];soft()"></button></div>`).join('')}</div></div>`;
+
+V.me = () => `<div class="stack">
+  ${largeTitle(T('Me'))}
+  <div class="pass">
+    <div class="row"><div><small>${T('Resident')}</small><b>Jordan Reyes</b></div><div style="text-align:right"><small>${esc(B().mark)}</small><b>${esc(B().lodge)}</b></div></div>
+    <div class="qrbox" id="qr"></div>
+    <div class="cap">${T('Scan at the front desk, dining hall and gym')}</div>
+    <div class="row"><div><small>${T('Room')}</small><b>${esc(B().block)} · 123</b></div><div style="text-align:right"><small>${T('Departs')}</small><b>${S.lang==='FR'?'30 nov.':'Nov 30'}</b></div></div>
+  </div>
+  <div class="h2"><h2>${T('Dietary profile')}</h2></div>
+  <div><div class="glabel"><span>${T('Goals')}</span></div><div class="pad"><div class="wrapchips">${GOALS.map(d=>`<button class="chip" aria-pressed="${S.prefs.has(d)}" onclick="togglePref('${d}')">${T(d)}</button>`).join('')}</div></div></div>
+  <div><div class="glabel"><span>${T('Requirements')}</span></div><div class="pad"><div class="wrapchips">${RULES.map(d=>`<button class="chip" aria-pressed="${S.prefs.has(d)}" onclick="togglePref('${d}')">${T(d)}</button>`).join('')}</div></div></div>
+  <div class="h2"><h2>${T('Settings')}</h2></div>
+  <div class="group">
+    <button class="cell" onclick="go('notifset',{title:'Notifications'})"><div class="t"><b style="font-weight:500">${T('Notifications')}</b></div>${I.chev}</button>
+    <div class="cell"><div class="t"><b style="font-weight:500">${T('Language')}</b></div><div class="seg2" style="width:110px">${['EN','FR'].map(l=>`<button aria-pressed="${S.lang===l}" onclick="S.lang='${l}';soft()">${l}</button>`).join('')}</div></div>
+  </div></div>`;
+function togglePref(d){ S.prefs.has(d)?S.prefs.delete(d):S.prefs.add(d); if(d==='Vegan' && S.prefs.has('Vegan')) S.prefs.add('Vegetarian'); save(); soft() }
+
+/* ---------- render ---------- */
+function render(){
+  const c = cur(), html = c ? V[c.view](c.data) : V[S.tab]();
+  $('#views').innerHTML = `<div class="view ${anim}">${html}</div>`; anim='';
+  $('#status').classList.toggle('light', !!(c && ['venue','eatclub','service','event'].includes(c.view)));
+  $('#tabbar').innerHTML = [['home','Home'],['eat','Eat'],['book','Book'],['me','Me']].map(([k,l])=>`<button aria-current="${S.tab===k?'page':'false'}" onclick="tab('${k}')">${I[k]}${T(l)}</button>`).join('');
+  document.documentElement.lang = S.lang==='FR' ? 'fr-CA' : 'en-CA';
+  const q = $('#qr'); if(q && window.QRCode){ new QRCode(q, {text:'CVL-RES-0412-ROT14', width:256, height:256, correctLevel:QRCode.CorrectLevel.M}) }
+}
+
+/* ---------- demo moments ---------- */
+function reset(){ closeSheet(); Object.keys(S.stacks).forEach(k=>S.stacks[k]=[]); S.table=null; S.where=null; S.when=null; S.forYou=false; S.cart=[]; S.cartVenue=null; S.resched=null }
+function moment(m){ reset();
+  if(m==='arrive'){ clearTimeout(bootT); clearTimeout(S.arriveT); S.roomReady=false; S.tab='home'; anim=''; render(); S.arriveT = setTimeout(()=>{ S.roomReady=true; soft(); notify('Your room is ready', `${B().block} · ${T('Room')} 123`) }, 1800) }
+  if(m==='table'){ scanTable() }
+  if(m==='later'){ S.tab='eat'; go('venue',{id:'room', title:'Room Service'}) }
+  if(m==='eatclub'){ S.tab='eat'; go('eatclub',{title:'Eat Club'}) }
+  if(m==='massage'){ S.tab='book'; go('service',{id:'massage', title:'Massage'}) }
+  if(m==='foodback'){ S.tab='eat'; go('venue',{id:'dining', title:'Dining Hall'}); setTimeout(()=>openFoodback(`${T('Dining Hall')} · ${T('Lunch')}`), 350) }
+  if(m==='prefs'){ S.prefs = new Set(['High protein','Halal']); save(); S.tab='eat'; S.menuTab.dining='Lunch'; go('venue',{id:'dining', title:'Dining Hall'}) }
+}
+document.documentElement.dataset.brand = 'ess';
+render();
+const bootT = setTimeout(()=>{ if(!S.roomReady){ S.roomReady=true; soft(); notify('Your room is ready', `${B().block} · ${T('Room')} 123`) } }, 6000);
+</script>
