@@ -209,6 +209,16 @@ p,.cell .t span,.note{text-wrap:pretty}
 .opt[aria-checked="true"] .mark svg{opacity:1}
 .opt:disabled{opacity:.35}
 .glabel{display:flex;justify-content:space-between;padding:0 32px 6px;font-size:13px;color:var(--fg2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.upsell{display:flex;gap:10px;overflow-x:auto;padding:0 18px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.ucard{flex:none;width:122px;background:var(--surface);border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;scroll-snap-align:start;transition:box-shadow .15s}
+.ucard[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.ucard .ph{height:96px}
+.ucard .t{padding:8px 10px 10px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.ucard .t b{font-weight:600;line-height:1.25}
+.ucard .t span{color:var(--fg2)}
+.ucard .add{position:absolute;top:80px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--surface);color:var(--accent);display:grid;place-items:center;font-size:19px;font-weight:600;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.18);z-index:2}
+.ucard[aria-pressed="true"] .add{background:var(--accent);color:var(--on-accent)}
+.ucard .add svg{width:14px;height:14px}
 .stepper{display:flex;align-items:center;gap:4px;background:var(--fill);border-radius:12px;height:50px;padding:0 6px;flex:none}
 .stepper button{width:34px;height:34px;display:grid;place-items:center;font-size:20px;border-radius:8px}
 .stepper span{min-width:18px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
@@ -352,7 +362,7 @@ const FR = {
   "You're booked":'Réservation confirmée','Add to calendar':'Ajouter au calendrier','Done':'Terminé','Reschedule':'Modifier','Cancel booking':'Annuler la réservation','Close':'Fermer',"You're in":'Inscription confirmée',
   'How was it?':"C'était comment?",'What stood out':"Ce qui s'est démarqué",'What could be better':'Ce qui pourrait être mieux','Send':'Envoyer','Anything for the chef?':'Un mot pour le chef?',
   'Taste':'Goût','Temperature':'Température','Portion':'Portion','Freshness':'Fraîcheur','Variety':'Variété','Service':'Service',
-  'Scan':'Scanner','Table 14':'Table 14','Patio':'Terrasse','Resident':'Résident','Departs':'Départ','Scan at the front desk, dining hall and gym':'À scanner à la réception, à la salle à manger et au gym',
+  'Scan':'Scanner','Simulate scanning':'Simuler un scan','Add a drink?':'Ajouter une boisson?','Table 14':'Table 14','Patio':'Terrasse','Resident':'Résident','Departs':'Départ','Scan at the front desk, dining hall and gym':'À scanner à la réception, à la salle à manger et au gym',
   'No notifications':'Aucune notification','Room ready':'Chambre prête','Order updates':'Suivi des commandes','Booking reminders':'Rappels de réservation','Menus and events':'Menus et activités',
   'When housekeeping finishes your room':"Quand l'entretien a terminé votre chambre",'Received, ready and on its way':'Reçue, prête et en route','An hour before appointments and classes':'Une heure avant les rendez-vous et les cours',"Today's menu at 10:00 and new events":"Menu du jour à 10 h et nouvelles activités",
   'Your order is on its way':'Votre commande est en route','Your order is ready':'Votre commande est prête','Lunch is ready for pickup':'Votre lunch est prêt','Order received':'Commande reçue','Order scheduled':'Commande planifiée','Lunch ordered':'Lunch commandé',
@@ -420,14 +430,16 @@ const ITEMS = {
   b1:{n:'Smoked brisket plate', fr:'Assiette de poitrine fumée', d:'12-hour brisket, slaw, cornbread, pickles.', dfr:'Poitrine fumée 12 heures, salade de chou, pain de maïs, cornichons.', p:21, tags:['High protein'], img:'brisket', mods:'side'},
   b2:{n:'BBQ half chicken', fr:'Demi-poulet BBQ', d:'Dry rub, grilled corn, slaw.', dfr:'Épices sèches, maïs grillé, salade de chou.', p:19, tags:['High protein','Gluten-free','Halal']},
   b3:{n:'Grilled veggie skewers', fr:'Brochettes de légumes grillés', d:'Peppers, zucchini, red onion, chimichurri.', dfr:'Poivrons, courgette, oignon rouge, chimichurri.', p:13, tags:['Vegan','Low sodium','Low carb','Gluten-free']},
-  k1:{n:'Draught pint', fr:'Pinte en fût', d:'Rotating local lager or IPA.', dfr:'Lager ou IPA locale, selon la semaine.', p:8, tags:[], alc:1},
-  k2:{n:'Craft soda', fr:'Soda artisanal', d:'Ginger, cream or root beer.', dfr:'Gingembre, crème soda ou racinette.', p:4, tags:['Vegan']},
+  k1:{n:'Draught pint', fr:'Pinte en fût', d:'Rotating local lager or IPA.', dfr:'Lager ou IPA locale, selon la semaine.', p:8, tags:[], alc:1, img:'pint'},
+  k2:{n:'Craft soda', fr:'Soda artisanal', d:'Ginger, cream or root beer.', dfr:'Gingembre, crème soda ou racinette.', p:4, tags:['Vegan','Gluten-free'], img:'soda'},
+  x1:{n:'Sparkling water', fr:'Eau pétillante', d:'Chilled, with lemon.', dfr:'Froide, avec citron.', p:2.5, tags:['Vegan','Gluten-free'], img:'sparkling'},
+  x2:{n:'Iced green tea', fr:'Thé vert glacé', d:'Lightly sweet, fresh mint.', dfr:'Légèrement sucré, menthe fraîche.', p:3.5, tags:['Vegan','Gluten-free'], img:'icedtea'},
   r1:{n:'Steak frites', fr:'Steak frites', d:'Sirloin, fries, peppercorn sauce.', dfr:'Surlonge, frites, sauce au poivre.', p:24, tags:['High protein'], img:'steak', mods:'side'},
   r2:{n:'Club sandwich', fr:'Club sandwich', d:'Turkey, bacon, tomato, fries.', dfr:'Dinde, bacon, tomate, frites.', p:15, tags:['High protein'], mods:'side'},
   r3:{n:'Greek yogurt parfait', fr:'Parfait au yogourt grec', d:'Granola, berries, honey.', dfr:'Granola, petits fruits, miel.', p:7, tags:['Vegetarian','High protein','Halal'], nuts:1},
   r4:{n:'Chicken shawarma bowl', fr:'Bol shawarma au poulet', d:'Rice, garlic sauce, pickled turnip, salad.', dfr:"Riz, sauce à l'ail, navet mariné, salade.", p:16, tags:['High protein','Halal','Dairy-free']},
   m1:{n:'Latte, 16 oz', fr:'Latte, 16 oz', d:'Double shot, choice of milk.', dfr:'Double espresso, lait au choix.', p:5.5, tags:['Vegetarian','Halal'], img:'coffee', mods:'milk'},
-  m2:{n:'Cold brew', fr:'Café infusé à froid', d:'Steeped 18 hours.', dfr:'Infusé 18 heures.', p:5, tags:['Vegan']},
+  m2:{n:'Cold brew', fr:'Café infusé à froid', d:'Steeped 18 hours.', dfr:'Infusé 18 heures.', p:5, tags:['Vegan','Gluten-free'], img:'coldbrew'},
   m3:{n:'Protein bar', fr:'Barre protéinée', d:'20 g protein.', dfr:'20 g de protéines.', p:3.5, tags:['High protein'], nuts:1},
   m4:{n:'USB-C charger', fr:'Chargeur USB-C', d:'20 W wall plug and cable.', dfr:'Adaptateur mural 20 W et câble.', p:18, tags:[], nonfood:1}
 };
@@ -438,10 +450,13 @@ const MENUS = {
   dining:{Breakfast:['d5','d6'], Lunch:['d1','d2','d3','d4'], Dinner:['d7','d8','d9']},
   scoop:{Lunch:['s1','s2','s3']},
   flex:{Lunch:['f1','f2','f3']},
-  pub:{'Pub':['p1','p2','p3','p4'], 'Patio BBQ':['b1','b2','b3'], 'Drinks':['k1','k2']},
+  pub:{'Pub':['p1','p2','p3','p4'], 'Patio BBQ':['b1','b2','b3'], 'Drinks':['k1','k2','x1']},
   room:{'Tonight':['r1','r4','r2','r3']},
   market:{'Coffee & snacks':['m1','m2','m3'], 'Essentials':['m4']}
 };
+// drinks offered with food, per venue; drinks themselves get no upsell
+const UPSELL = {pub:['k2','x1','k1'], flex:['x2','x1','k2'], room:['k2','x1','x2'], market:['m2','m1']};
+const DRINKS = new Set(Object.values(UPSELL).flat());
 const MODS = {
   noodle:[{g:'Noodles', one:1, o:[['Regular',0,'Normales'],['Extra noodles',2,'Extra nouilles'],['Zucchini noodles',1,'Nouilles de courgette']]},{g:'Add', o:[['Extra egg',1.5,'Œuf supplémentaire',['Vegan']],['Extra chashu',3,'Chashu supplémentaire',['Vegan','Vegetarian','Halal']],['Chili oil',0,'Huile pimentée']]}],
   side:[{g:'Side', one:1, o:[['Fries',0,'Frites'],['Side salad',0,'Salade'],['Sweet potato fries',2,'Frites de patate douce']]},{g:'Add', o:[['Bacon',2,'Bacon',['Vegan','Vegetarian','Halal']],['Extra meat',5,'Viande supplémentaire',['Vegan','Vegetarian']]]}],
@@ -608,27 +623,30 @@ V.venue = d => { const id=d.id, v=VENUES[id], m=MENUS[id], secs=Object.keys(m);
 
 /* item sheet with modifiers */
 let draft = null;
-function openItem(k, venue){ const it = ITEMS[k]; draft = {k, venue, q:1, sel:{}};
+function openItem(k, venue){ const it = ITEMS[k]; draft = {k, venue, q:1, sel:{}, drinks:new Set()};
   (MODS[it.mods]||[]).forEach((g,gi)=>{ draft.sel[gi] = g.one ? new Set([0]) : new Set() }); drawItem() }
 function drawItem(){ const it = ITEMS[draft.k], groups = MODS[it.mods]||[], v = VENUES[draft.venue];
   const extra = groups.reduce((a,g,gi)=>a+[...draft.sel[gi]].reduce((s,oi)=>s+g.o[oi][1],0),0), total = (it.p+extra)*draft.q;
   const broken = new Set(groups.flatMap((g,gi)=>[...draft.sel[gi]].flatMap(oi=>g.o[oi][3]||[])));
   const f = it.nonfood?[]:fails(it.tags.filter(t=>!broken.has(t)));
+  const ups = DRINKS.has(draft.k) || it.nonfood ? [] : (UPSELL[draft.venue]||[]).filter(d=>!fails(ITEMS[d].tags).length);
+  const dsum = [...draft.drinks].reduce((a,d)=>a+ITEMS[d].p,0);
   const y = draft.keep ? ($('#sheet .body')||{}).scrollTop||0 : 0; draft.keep = 0;
   openSheet(`<div class="body">${it.img?`<div class="shero">${photo(it.img, v.icon)}</div>`:''}
     <div class="stack" style="gap:18px;padding-top:${it.img?16:30}px">
     <div class="pad"><h3>${esc(L(it))}</h3><p style="margin:6px 0 0;color:var(--fg2)">${esc(D(it))}</p><div>${f.length?notTag(f[0]):tagsHtml(it.tags)}</div></div>
     ${groups.map((g,gi)=>`<div><div class="glabel"><span>${T(g.g)}</span><span>${T(g.one?'Required':'Optional')}</span></div><div class="group">${g.o.map(([n,p,fr,br],oi)=>{ const base = fails(it.tags), of = br ? fails(it.tags.filter(t=>!br.includes(t))).filter(x=>!base.includes(x)) : []; return `<button class="opt" role="${g.one?'radio':'checkbox'}" aria-checked="${draft.sel[gi].has(oi)}" onclick="pick(${gi},${oi})" ${of.length?'style="opacity:.45"':''}><span class="mark ${g.one?'':'sq'}">${I.check}</span><span class="t">${S.lang==='FR'?fr:n}</span>${of.length?notTag(of[0]):''}${p?`<span style="color:var(--fg2)">+${money(p)}</span>`:''}</button>`}).join('')}</div></div>`).join('')}
+    ${ups.length?`<div><div class="glabel"><span>${T('Add a drink?')}</span></div><div class="upsell">${ups.map(d=>{ const x=ITEMS[d], on=draft.drinks.has(d); return `<button class="ucard" aria-pressed="${on}" onclick="draft.keep=1;draft.drinks.has('${d}')?draft.drinks.delete('${d}'):draft.drinks.add('${d}');drawItem()">${photo(x.img,'cup')}<span class="add" aria-hidden="true">${on?I.check:'+'}</span><span class="t"><b>${esc(L(x))}</b><span>${money(x.p)}</span></span></button>` }).join('')}</div></div>`:''}
     ${it.alc?`<div class="pad" style="color:var(--fg2);font-size:13px">${T('Two drinks per order. ID checked on delivery.')}</div>`:''}
     </div></div>
     <div class="foot"><div class="stepper"><button aria-label="-" onclick="draft.q=Math.max(1,draft.q-1);drawItem()">−</button><span>${draft.q}</span><button aria-label="+" onclick="draft.q=Math.min(${it.alc?2:9},draft.q+1);drawItem()">+</button></div>
-    <button class="btn" onclick="addDraft(${total})">${T('Add')} · ${money(total)}</button></div>`);
+    <button class="btn" onclick="addDraft(${total})">${T('Add')} · ${money(total+dsum)}</button></div>`);
   if(y) $('#sheet .body').scrollTop = y }
 function pick(gi, oi){ const g = MODS[ITEMS[draft.k].mods][gi]; draft.keep = 1; if(g.one) draft.sel[gi] = new Set([oi]); else draft.sel[gi].has(oi)?draft.sel[gi].delete(oi):draft.sel[gi].add(oi); drawItem() }
 function addDraft(total){ const it = ITEMS[draft.k], groups = MODS[it.mods]||[];
   const notes = groups.flatMap((g,gi)=>[...draft.sel[gi]].map(oi=>S.lang==='FR'?g.o[oi][2]:g.o[oi][0])).filter(n=>!['Regular','Whole','Normales','Entier'].includes(n));
   if(S.cartVenue && S.cartVenue!==draft.venue){ S.cart = []; notify('New order started', vname(draft.venue)) }
-  S.cartVenue = draft.venue; S.cart.push({n:L(it), q:draft.q, total, notes}); closeSheet(); soft() }
+  S.cartVenue = draft.venue; S.cart.push({n:L(it), q:draft.q, total, notes}); draft.drinks.forEach(d=>S.cart.push({n:L(ITEMS[d]), q:1, total:ITEMS[d].p, notes:[]})); closeSheet(); soft() }
 
 V.checkout = () => { const v = S.cartVenue, ven = VENUES[v], t = S.cart.reduce((a,c)=>a+c.total,0), gst = Math.round(t*5)/100, tot = t+gst;
   const opts = v==='pub' ? [...(S.table?[S.table]:[]), T('Pick up at the bar'), T('Golf simulator · Bay 2')] : v==='room' ? [`${B().block} · ${T('Room')} 123`] : [T('Pick up at the counter')];
@@ -739,10 +757,10 @@ function drawFb(){ const ta = $('#fb-note'); if(ta) fb.note = ta.value; const ch
 
 V.scan = () => `${navbar('Scan')}<div class="stack">
   <div class="pad"><div style="height:220px;border-radius:18px;background:#0d1114;position:relative;overflow:hidden"><img src="img/pub.jpg" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.45;filter:blur(2px)"><div style="position:absolute;inset:50px 90px;border:3px solid #fff;border-radius:16px;clip-path:polygon(0 0,30% 0,30% 6px,70% 6px,70% 0,100% 0,100% 30%,calc(100% - 6px) 30%,calc(100% - 6px) 70%,100% 70%,100% 100%,70% 100%,70% calc(100% - 6px),30% calc(100% - 6px),30% 100%,0 100%,0 70%,6px 70%,6px 30%,0 30%)"></div></div></div>
-  <div class="group">
+  <div><div class="glabel"><span>${T('Simulate scanning')}</span></div><div class="group">
     <button class="cell" style="--inset:58px" onclick="scanTable()"><div class="glyph">${I.beer}</div><div class="t"><b>${T('Table 14')}</b><span>${esc(B().pub)} · ${T('Patio')}</span></div>${I.chev}</button>
     <button class="cell" style="--inset:58px" onclick="back();openFoodback('${T('Dining Hall')} · ${T('Lunch')}')"><div class="glyph">${I.star}</div><div class="t"><b>Foodback</b><span>${T('Dining Hall')}</span></div>${I.chev}</button>
-  </div></div>`;
+  </div></div></div>`;
 function scanTable(){ S.table = `${T('Patio')} · ${T('Table 14')}`; S.where = S.table; Object.keys(S.stacks).forEach(k=>S.stacks[k]=[]); S.tab='eat'; S.menuTab.pub='Patio BBQ'; go('venue',{id:'pub', title:vname('pub')}) }
 
 V.notes = () => { S.unread = 0;
