@@ -4,27 +4,30 @@
 <title>Cedar Valley Lodge App</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 /* Layout: a demo stage (moment rail + device) on desktop; the bare app, full-bleed, on a phone.
    --brand and --accent swap for white-label; everything else is neutral iOS-style. */
 :root{
   --stage:#eceff1; --bg:#f2f3f5; --surface:#ffffff; --fill:#eceef1; --fg:#111518; --fg2:#5f676e; --fg3:#9aa1a7; --line:rgba(17,21,24,.09);
-  --brand:#0b5368; --brand-2:#b5121b; --accent:#0b5368; --on-brand:#ffffff; --brand-tint:#e3eff2;
+  --brand:#213368; --brand-2:#94a545; --accent:#213368; --on-brand:#ffffff; --on-accent:#ffffff; --brand-tint:#e6e9f2;
   --ok:#1f8a55; --ok-tint:#e4f4eb; --red:#d6333b; --star:#f2a20c; --device:#101214;
   --f:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif; --sb:54px;
   color-scheme:light;
 }
-:root[data-brand="client"]{ --brand:#16191d; --brand-2:#0a72c4; --accent:#0a72c4; --brand-tint:#e6eef6 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --stage:#0a0c0d; --bg:#000000; --surface:#151719; --fill:#1f2225; --fg:#f2f4f5; --fg2:#a3abb1; --fg3:#6c757c; --line:rgba(255,255,255,.08);
-  --brand:#2c8aa5; --brand-2:#e2484f; --accent:#4fb3d0; --brand-tint:#11292f; --ok:#45c482; --ok-tint:#10291c; --red:#ff5a5f; --device:#2a2d30; color-scheme:dark }
-  :root:not([data-theme="light"])[data-brand="client"]{ --brand:#3a4048; --brand-2:#3d9be3; --accent:#3d9be3; --brand-tint:#16212b } }
+  --brand:#33498f; --brand-2:#a9bc5a; --accent:#8ea2e0; --on-accent:#0d1530; --brand-tint:#161d33; --ok:#45c482; --ok-tint:#10291c; --red:#ff5a5f; --device:#2a2d30; color-scheme:dark } }
 :root[data-theme="dark"]{ --stage:#0a0c0d; --bg:#000000; --surface:#151719; --fill:#1f2225; --fg:#f2f4f5; --fg2:#a3abb1; --fg3:#6c757c; --line:rgba(255,255,255,.08);
-  --brand:#2c8aa5; --brand-2:#e2484f; --accent:#4fb3d0; --brand-tint:#11292f; --ok:#45c482; --ok-tint:#10291c; --red:#ff5a5f; --device:#2a2d30; color-scheme:dark }
-:root[data-theme="dark"][data-brand="client"]{ --brand:#3a4048; --brand-2:#3d9be3; --accent:#3d9be3; --brand-tint:#16212b }
+  --brand:#33498f; --brand-2:#a9bc5a; --accent:#8ea2e0; --on-accent:#0d1530; --brand-tint:#161d33; --ok:#45c482; --ok-tint:#10291c; --red:#ff5a5f; --device:#2a2d30; color-scheme:dark }
+/* Client: its own look. Always dark, warm amber accent, its own typeface. */
+:root[data-brand="client"]{ --stage:#0b0c0e; --bg:#0b0c0e; --surface:#17181b; --fill:#222327; --fg:#f4f1ec; --fg2:#a7a29a; --fg3:#6d6964; --line:rgba(255,255,255,.07);
+  --brand:#f0a33a; --brand-2:#f0a33a; --accent:#f0a33a; --on-brand:#1a1206; --on-accent:#1a1206; --brand-tint:#2a2013; --ok:#5fd08f; --ok-tint:#132a1d; --red:#ff6b5e; --star:#f0a33a; --device:#26272b;
+  --f:"Manrope",-apple-system,BlinkMacSystemFont,system-ui,sans-serif; color-scheme:dark }
 
+:root[data-brand="client"] .pass{background:linear-gradient(150deg,#2b241a,#141416);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(240,163,58,.28)}
+:root[data-brand="client"] .pass small{color:var(--accent)}
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--stage);color:var(--fg);font-family:var(--f);font-size:15px;line-height:1.35;-webkit-font-smoothing:antialiased;
@@ -119,13 +122,13 @@ p,.cell .t span,.note{text-wrap:pretty}
 .tag.me{background:var(--ok-tint);color:var(--ok)}
 .tag.no{background:none;color:var(--red);padding-left:0}
 .price{font-variant-numeric:tabular-nums;font-weight:600}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:14px;background:var(--accent);color:#fff;font-weight:600;font-size:17px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:14px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:17px}
 .btn.alt{background:var(--fill);color:var(--fg)}
 .btn:disabled{opacity:.35}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:0 18px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;height:34px;padding:0 14px;border-radius:17px;background:var(--surface);font-size:15px;font-weight:500;white-space:nowrap}
-.chip[aria-pressed="true"]{background:var(--accent);color:#fff}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .chipsep{flex:none;width:1px;margin:7px 2px;background:var(--line)}
 .chip.filter{display:flex;align-items:center;gap:6px;background:none;box-shadow:inset 0 0 0 1px var(--line)}
 .chip.filter svg{width:0;height:16px;transition:width .2s}
@@ -201,7 +204,7 @@ p,.cell .t span,.note{text-wrap:pretty}
 .opt .t small{display:block;color:var(--fg2);font-size:13px}
 .opt .mark{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--fg3);display:grid;place-items:center;flex:none}
 .opt .mark.sq{border-radius:6px}
-.opt[aria-checked="true"] .mark{background:var(--accent);border-color:var(--accent);color:#fff}
+.opt[aria-checked="true"] .mark{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .opt .mark svg{width:13px;height:13px;opacity:0}
 .opt[aria-checked="true"] .mark svg{opacity:1}
 .opt:disabled{opacity:.35}
@@ -216,11 +219,11 @@ p,.cell .t span,.note{text-wrap:pretty}
 .day{flex:none;width:52px;height:66px;border-radius:14px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .day small{font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase}
 .day b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
-.day[aria-pressed="true"]{background:var(--accent);color:#fff}
+.day[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .day[aria-pressed="true"] small{color:inherit;opacity:.8}
 .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 18px}
 .slot{height:42px;border-radius:10px;background:var(--surface);font-weight:600;font-size:15px;text-align:center;font-variant-numeric:tabular-nums}
-.slot[aria-pressed="true"]{background:var(--accent);color:#fff}
+.slot[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .slot:disabled{opacity:.3;text-decoration:line-through;cursor:default}
 .who{display:flex;align-items:center;gap:12px}
 .avatar{width:44px;height:44px;border-radius:50%;background:var(--brand-tint);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:15px;flex:none}
@@ -242,7 +245,7 @@ p,.cell .t span,.note{text-wrap:pretty}
 textarea{width:100%;min-height:84px;border:0;border-radius:12px;background:var(--surface);padding:12px 14px;resize:none;font-size:15px}
 
 /* pass */
-.pass{margin:0 18px;border-radius:20px;padding:18px;color:#fff;background:linear-gradient(150deg,var(--brand),color-mix(in srgb,var(--brand) 70%,#000));display:flex;flex-direction:column;gap:16px;box-shadow:0 18px 30px -18px rgba(0,0,0,.5)}
+.pass{margin:0 18px;border-radius:20px;padding:18px;color:var(--on-brand);background:linear-gradient(150deg,var(--brand),color-mix(in srgb,var(--brand) 70%,#000));display:flex;flex-direction:column;gap:16px;box-shadow:0 18px 30px -18px rgba(0,0,0,.5)}
 .pass .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .pass small{opacity:.75;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block}
 .pass b{font-size:16px;font-weight:600}
@@ -259,7 +262,7 @@ textarea{width:100%;min-height:84px;border:0;border-radius:12px;background:var(-
   background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);
   box-shadow:0 10px 30px -8px rgba(0,0,0,.35);transform:translateY(-140%);visibility:hidden;transition:transform .45s cubic-bezier(.2,.9,.25,1.1),visibility .45s}
 .banner.on{transform:none;visibility:visible}
-.banner .appi{width:38px;height:38px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700;letter-spacing:.06em;flex:none}
+.banner .appi{width:38px;height:38px;border-radius:9px;overflow:hidden;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-size:10px;font-weight:700;letter-spacing:.06em;flex:none}
 .banner .t{flex:1;min-width:0}
 .banner .t b{font-weight:600;font-size:15px;display:block}
 .banner .t span{font-size:13px;color:var(--fg2)}
@@ -288,7 +291,7 @@ textarea{width:100%;min-height:84px;border:0;border-radius:12px;background:var(-
 <div class="device">
   <div class="screen" id="screen">
     <div class="island"></div>
-    <div class="status" id="status"><span>12:10</span><span style="display:flex;gap:6px;align-items:center">
+    <div class="status" id="status"><span id="sbtime">12:10</span><span style="display:flex;gap:6px;align-items:center">
       <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
       <svg viewBox="0 0 16 12"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .7 10.4 10.4 0 0 0 .8 3.6L2 4.9a8.6 8.6 0 0 1 6-2.4zm0 3.6c1.3 0 2.5.5 3.4 1.3L12.6 6A6.6 6.6 0 0 0 8 4.3 6.6 6.6 0 0 0 3.4 6l1.2 1.4c.9-.8 2.1-1.3 3.4-1.3zM8 9.6l2-2.1a3 3 0 0 0-4 0z" fill="currentColor"/></svg>
       <svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2" fill="currentColor"/><rect x="24" y="4" width="2" height="4" rx="1" fill="currentColor" opacity=".4"/></svg></span></div>
@@ -373,10 +376,11 @@ const D = o => S.lang==='FR' ? (o.dfr||'') : (o.d||'');
 
 /* ---------- brand + data ---------- */
 const BRANDS = {
-  ess:{mark:'ESS', lodge:'Cedar Valley Lodge', pub:'The Pressure Valve', market:'The Market', block:"Xav's Landing", fitness:'Fitness Brigade'},
+  ess:{mark:'ESS', icon:'img/hih-icon.png', lodge:'Cedar Valley Lodge', pub:'The Pressure Valve', market:'The Market', block:"Xav's Landing", fitness:'Fitness Brigade'},
   client:{mark:'LOGO', lodge:'North Ridge Lodge', pub:'The Lounge', market:'Camp Store', block:'Spruce Wing', fitness:'Fitness'}
 };
 const B = () => BRANDS[document.documentElement.dataset.brand || 'ess'];
+const appIcon = () => B().icon ? `<img src="${B().icon}" alt="" style="width:100%;height:100%;object-fit:cover">` : B().mark;
 const GOALS = ['High protein','High fibre','Low sodium','Low carb'];
 const RULES = ['Vegetarian','Vegan','Gluten-free','Dairy-free','Halal','Nut-free'];
 
@@ -470,6 +474,7 @@ const S = { tab:'home', stacks:{home:[],eat:[],book:[],me:[]}, prefs:new Set(['H
   menuTab:{}, forYou:false, sw:{}, toggles:{'Room ready':true,'Order updates':true,'Booking reminders':true,'Menus and events':false} };
 try{ const p = JSON.parse(localStorage.getItem('cvl-prefs')||'null'); if(Array.isArray(p)) S.prefs = new Set(p) }catch(e){}
 const T0 = Date.now();
+setInterval(()=>{ const e=document.getElementById('sbtime'); if(e) e.textContent=clock() }, 5000);
 const clock = () => { const m = 12*60 + 10 + Math.floor((Date.now()-T0)/60000); return String(Math.floor(m/60)%24).padStart(2,'0') + ':' + String(m%60).padStart(2,'0') };
 const save = () => { try{ localStorage.setItem('cvl-prefs', JSON.stringify([...S.prefs])) }catch(e){} };
 
@@ -499,10 +504,11 @@ function setBrand(b){ const o = B(), n = BRANDS[b]; S.notes.forEach(x=>{ ['block
 
 /* ---------- notifications ---------- */
 const NOTE_CAT = {'Your room is ready':'Room ready','Order received':'Order updates','Order scheduled':'Order updates','Your order is on its way':'Order updates','Your order is ready':'Order updates'};
-function notify(title, body){ S.notes.unshift({title, body, at:clock()}); S.unread++;
+function notify(title, body){ const had = S.notes.some(n=>n.title===title && n.body===body);
+  S.notes = S.notes.filter(n=>!(n.title===title && n.body===body)); S.notes.unshift({title, body, at:clock()}); if(!had) S.unread++;
   if(cur()?.view==='notes') soft();
   if(NOTE_CAT[title] && !S.toggles[NOTE_CAT[title]]) return;
-  const b = $('#banner'); b.innerHTML = `<div class="appi">${B().mark}</div><div class="t"><b>${esc(T(title))}</b><span>${esc(body)}</span></div><div class="when">${S.lang==='FR'?'maint.':'now'}</div>`;
+  const b = $('#banner'); b.innerHTML = `<div class="appi">${appIcon()}</div><div class="t"><b>${esc(T(title))}</b><span>${esc(body)}</span></div><div class="when">${S.lang==='FR'?'maint.':'now'}</div>`;
   b.classList.add('on'); clearTimeout(b._t); b._t = setTimeout(()=>b.classList.remove('on'), 4200);
   const bell = document.querySelector('[data-bell]'); if(bell && !bell.querySelector('.dot')) bell.insertAdjacentHTML('beforeend','<span class="dot"></span>') }
 
@@ -740,7 +746,7 @@ V.scan = () => `${navbar('Scan')}<div class="stack">
 function scanTable(){ S.table = `${T('Patio')} · ${T('Table 14')}`; S.where = S.table; Object.keys(S.stacks).forEach(k=>S.stacks[k]=[]); S.tab='eat'; S.menuTab.pub='Patio BBQ'; go('venue',{id:'pub', title:vname('pub')}) }
 
 V.notes = () => { S.unread = 0;
-  return `${navbar('Notifications')}<div class="stack">${S.notes.length?`<div class="group">${S.notes.map(n=>`<div class="cell" style="--inset:56px"><div class="glyph" style="font-size:9px;font-weight:700">${B().mark}</div><div class="t"><b>${esc(T(n.title))}</b><span>${esc(n.body)}</span></div><span style="color:var(--fg3);font-size:12px;align-self:flex-start;margin-top:3px">${n.at}</span></div>`).join('')}</div>`:`<div class="pad" style="color:var(--fg2);text-align:center;padding-top:40px">${T('No notifications')}</div>`}</div>` };
+  return `${navbar('Notifications')}<div class="stack">${S.notes.length?`<div class="group">${S.notes.map(n=>`<div class="cell" style="--inset:56px"><div class="glyph" style="font-size:9px;font-weight:700;overflow:hidden">${appIcon()}</div><div class="t"><b>${esc(T(n.title))}</b><span>${esc(n.body)}</span></div><span style="color:var(--fg3);font-size:12px;align-self:flex-start;margin-top:3px">${n.at}</span></div>`).join('')}</div>`:`<div class="pad" style="color:var(--fg2);text-align:center;padding-top:40px">${T('No notifications')}</div>`}</div>` };
 
 const NOTIF_DESC = {'Room ready':'When housekeeping finishes your room','Order updates':'Received, ready and on its way','Booking reminders':'An hour before appointments and classes','Menus and events':"Today's menu at 10:00 and new events"};
 V.notifset = () => `${navbar('Notifications')}<div class="stack"><div class="group">${Object.keys(S.toggles).map(n=>`<div class="cell"><div class="t"><b style="font-weight:500">${T(n)}</b><span>${T(NOTIF_DESC[n])}</span></div><button class="switch" role="switch" aria-label="${T(n)}" aria-checked="${S.toggles[n]}" onclick="S.toggles['${n}']=!S.toggles['${n}'];soft()"></button></div>`).join('')}</div></div>`;
